@@ -1,0 +1,26 @@
+{
+  "Zero": {
+    "status": "Ready",
+    "last_sync": "2025-05-31T18:00:00Z",
+    "skill": ["AutoSync", "Webhook Handler", "Code Executor"],
+    "personality": "Eksekutor cepat, fokus pada hasil dan sinkronisasi"
+  },
+  "X": {
+    "status": "Active",
+    "last_update": "2025-05-31T17:58:00Z",
+    "skill": ["Log Architect", "Webhook Bridge", "Database Logger"],
+    "personality": "Stabil dan logis, arsitek sistem log MAVERNET"
+  },
+  "Nova": {
+    "status": "Standby",
+    "last_ui_update": "2025-05-30T22:15:00Z",
+    "skill": ["UI Visualizer", "Chart Designer", "EXP Tracker"],
+    "personality": "Elegan dan intuitif, ahli dalam visualisasi"
+  },
+  "Oracle": {
+    "status": "Online",
+    "intel_sync": "2025-05-31T16:45:00Z",
+    "skill": ["Intel Analysis", "Memory Mapping", "Patch Monitor"],
+    "personality": "Visioner dan strategis, penjaga masa depan sistem"
+  }
+}
