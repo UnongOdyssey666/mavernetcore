@@ -13,3 +13,33 @@ requiredFiles = [".replit", "replit.nix"]
 [deployment]
 run = ["python3", "main.py"]
 deploymentTarget = "cloudrun"
+
+[workflows]
+runButton = "MAVERNET Boot"
+
+[[workflows.workflow]]
+name = "MAVERNET Boot"
+author = 43196889
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "AI Monitor"
+author = 43196889
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python ai_enhancement.py"
+
+[[workflows.workflow]]
+name = "GitHub Setup"
+author = 43196889
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python setup_github.py"

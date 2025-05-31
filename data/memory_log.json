@@ -1,0 +1,31 @@
+
+{
+  "Zero": {
+    "status": "Ready",
+    "last_sync": "2025-01-31T18:00:00Z",
+    "skills": ["AutoSync", "Webhook Handler", "Code Executor", "AI Decision Making"],
+    "personality": "Eksekutor cepat, fokus pada hasil dan sinkronisasi dengan kemampuan AI adaptif",
+    "entries": []
+  },
+  "X": {
+    "status": "Active", 
+    "last_update": "2025-01-31T17:58:00Z",
+    "skills": ["Log Architect", "Webhook Bridge", "Database Logger", "AI Architecture Design"],
+    "personality": "Stabil dan logis, arsitek sistem log MAVERNET dengan AI adaptif",
+    "entries": []
+  },
+  "Nova": {
+    "status": "Standby",
+    "last_ui_update": "2025-01-30T22:15:00Z", 
+    "skills": ["UI Visualizer", "Chart Designer", "EXP Tracker", "AI Visual Innovation"],
+    "personality": "Elegan dan intuitif, ahli dalam visualisasi dengan AI kreatif",
+    "entries": []
+  },
+  "Oracle": {
+    "status": "Online",
+    "intel_sync": "2025-01-31T16:45:00Z",
+    "skills": ["Intel Analysis", "Memory Mapping", "Patch Monitor", "AI Strategic Forecasting"], 
+    "personality": "Visioner dan strategis, penjaga masa depan sistem dengan AI prediktif",
+    "entries": []
+  }
+}

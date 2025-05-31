@@ -1,23 +1,31 @@
+
 [
   {
     "id": "MAV-001",
-    "title": "Modularisasi Replika MAVERNET",
+    "title": "Modularisasi Replika MAVERNET dengan AI Enhancement",
     "unit": ["Zero", "Nova", "Oracle", "X"],
     "status": "Completed",
-    "timestamp": "2025-05-31T17:00:00Z"
+    "timestamp": "2025-01-31T17:00:00Z"
   },
   {
-    "id": "MAV-002",
-    "title": "Deploy main.py sebagai Orkestrator",
+    "id": "MAV-002", 
+    "title": "Deploy main.py sebagai AI-Enhanced Orchestrator",
     "unit": ["Zero", "X"],
     "status": "In Progress",
-    "timestamp": "2025-05-31T18:10:00Z"
+    "timestamp": "2025-01-31T18:10:00Z"
   },
   {
     "id": "MAV-003",
-    "title": "Ekspor sistem MAVERNET ke GitHub",
+    "title": "Ekspor sistem MAVERNET_CORE ke GitHub",
     "unit": ["X", "Zero"],
-    "status": "Planned",
+    "status": "Planned", 
     "timestamp": null
+  },
+  {
+    "id": "MAV-004",
+    "title": "Implementasi AI Autonomous Agents",
+    "unit": ["Zero", "X", "Nova", "Oracle"],
+    "status": "Active",
+    "timestamp": "2025-01-31T19:00:00Z"
   }
 ]
