@@ -18,8 +18,9 @@ import google.generativeai as genai
 
 
 class XReplica:
-    def __init__(self, gemini_model=None): # Menerima model Gemini dari MaverNetSystem
+    def __init__(self, gemini_model=None, admin_mode=False): # Menerima model Gemini dari MaverNetSystem
         self.name = "X Replica"
+        self.admin_mode = admin_mode
         self.skills = [
             "Otomatisasi Spreadsheet (Excel)", "Bridge Data", "Webhook Handler",
             "Log Analyzer", "AI Data Processing", "Self-Reflection", "Web Request" # Menambahkan skill baru

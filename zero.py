@@ -2,6 +2,7 @@
 import json
 import random
 import time
+import re
 from pathlib import Path
 from datetime import datetime
 import os
@@ -14,15 +15,16 @@ from bs4 import BeautifulSoup
 import google.generativeai as genai
 
 class Zero:
-    def __init__(self, gemini_model=None):
+    def __init__(self, gemini_model=None, admin_mode=False):
         """
         Inisialisasi Unit Eksekutor AI Zero.
         Mengatur atribut dasar Zero seperti nama, skill, memori, dan kepribadian AI.
         """
         self.name = "Zero"
+        self.admin_mode = admin_mode
         self.skills = [
             "Eksekutor Misi", "Sinkronisasi Data", "AI Decision Making",
-            "Autonomous Action", "Adaptive Learning", "Web Interaction"
+            "Autonomous Action", "Adaptive Learning", "Web Interaction", "File System Operations"
         ]
         self.memory = self.load_memory()
         self.ai_personality = "Eksekutor cepat, fokus pada hasil dan sinkronisasi dengan kemampuan AI adaptif."
@@ -38,6 +40,9 @@ class Zero:
             print(f"⚠️ [Zero]: Running without Gemini AI")
 
         self.status = "Online & Idle"
+        
+        if self.admin_mode:
+            print(f"👑 [Zero]: Administrator mode activated - Full file access granted")
 
         print(f"[{self.name}]: Sistem siap. Status: {self.status}. Kepribadian: '{self.ai_personality}'")
 
@@ -232,6 +237,137 @@ class Zero:
             })
             self.self_reflect_and_learn("web_request", success=False, error=error_msg)
             return f"❌ {error_msg}"
+
+    def read_file(self, file_path):
+        """
+        Read file contents with admin authorization
+        """
+        try:
+            # Check authorization
+            if not self.admin_mode and not self._has_file_permission(file_path):
+                return f"❌ Access denied: {file_path} requires admin authorization"
+            
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            self.add_memory({
+                "type": "file_read",
+                "file_path": file_path,
+                "size": len(content),
+                "success": True,
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            print(f"📖 [Zero]: Successfully read {file_path} ({len(content)} characters)")
+            return f"✅ File read: {content}"
+            
+        except FileNotFoundError:
+            error_msg = f"File not found: {file_path}"
+            self.add_memory({
+                "type": "file_read",
+                "file_path": file_path,
+                "error": error_msg,
+                "success": False,
+                "timestamp": datetime.now().isoformat()
+            })
+            return f"❌ {error_msg}"
+        except Exception as e:
+            error_msg = f"Error reading file {file_path}: {str(e)}"
+            self.add_memory({
+                "type": "file_read",
+                "file_path": file_path,
+                "error": error_msg,
+                "success": False,
+                "timestamp": datetime.now().isoformat()
+            })
+            return f"❌ {error_msg}"
+
+    def write_file(self, file_path, content, mode='w'):
+        """
+        Write content to file with admin authorization
+        """
+        try:
+            # Check authorization
+            if not self.admin_mode and not self._has_file_permission(file_path):
+                return f"❌ Access denied: {file_path} requires admin authorization"
+            
+            # Ensure directory exists
+            Path(file_path).parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(file_path, mode, encoding='utf-8') as f:
+                f.write(content)
+            
+            self.add_memory({
+                "type": "file_write",
+                "file_path": file_path,
+                "size": len(content),
+                "mode": mode,
+                "success": True,
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            print(f"📝 [Zero]: Successfully wrote to {file_path} ({len(content)} characters)")
+            return f"✅ File written: {file_path}"
+            
+        except Exception as e:
+            error_msg = f"Error writing file {file_path}: {str(e)}"
+            self.add_memory({
+                "type": "file_write",
+                "file_path": file_path,
+                "error": error_msg,
+                "success": False,
+                "timestamp": datetime.now().isoformat()
+            })
+            return f"❌ {error_msg}"
+
+    def list_directory(self, dir_path="."):
+        """
+        List directory contents
+        """
+        try:
+            if not self.admin_mode and not self._has_file_permission(dir_path):
+                return f"❌ Access denied: {dir_path} requires admin authorization"
+            
+            items = []
+            for item in Path(dir_path).iterdir():
+                item_type = "DIR" if item.is_dir() else "FILE"
+                size = item.stat().st_size if item.is_file() else 0
+                items.append(f"{item_type}: {item.name} ({size} bytes)")
+            
+            result = f"📁 Directory listing for {dir_path}:\n" + "\n".join(items)
+            
+            self.add_memory({
+                "type": "directory_list",
+                "dir_path": dir_path,
+                "items_count": len(items),
+                "success": True,
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            return result
+            
+        except Exception as e:
+            error_msg = f"Error listing directory {dir_path}: {str(e)}"
+            self.add_memory({
+                "type": "directory_list",
+                "dir_path": dir_path,
+                "error": error_msg,
+                "success": False,
+                "timestamp": datetime.now().isoformat()
+            })
+            return f"❌ {error_msg}"
+
+    def _has_file_permission(self, file_path):
+        """
+        Check if Zero has permission to access the file
+        """
+        # Allow access to data directory and common file types
+        safe_paths = ['data/', 'logs/', 'temp/', 'output/']
+        safe_extensions = ['.txt', '.json', '.csv', '.log', '.md']
+        
+        file_path_str = str(file_path)
+        return (any(file_path_str.startswith(path) for path in safe_paths) or
+                any(file_path_str.endswith(ext) for ext in safe_extensions))
 
     def execute_task(self, task_name, payload=None):
         """
@@ -434,6 +570,29 @@ class Zero:
             self.save_memory()
             return f"[{self.name}]: Permintaan penyimpanan memori diproses."
 
+        # File system commands
+        elif "read file" in command_lower or "baca file" in command_lower:
+            # Extract file path from command
+            file_path = command.split("read file", 1)[-1].split("baca file", 1)[-1].strip()
+            if not file_path:
+                return f"[{self.name}]: Please specify a file path to read."
+            return self.read_file(file_path)
+
+        elif "write file" in command_lower or "tulis file" in command_lower:
+            # Parse: "write file path/to/file.txt content here"
+            parts = command.split(" ", 3)
+            if len(parts) < 4:
+                return f"[{self.name}]: Format: 'write file <path> <content>'"
+            file_path = parts[2]
+            content = parts[3]
+            return self.write_file(file_path, content)
+
+        elif "list directory" in command_lower or "list dir" in command_lower:
+            dir_path = command.split("list directory", 1)[-1].split("list dir", 1)[-1].strip()
+            if not dir_path:
+                dir_path = "."
+            return self.list_directory(dir_path)
+
         # Shutdown command
         elif "shutdown" in command_lower or "exit" in command_lower or "matikan" in command_lower:
             self.save_memory()
@@ -469,6 +628,8 @@ class Zero:
                         f"  - 'cari di web [URL] keyword [KEYWORD]'\n"
                         f"  - 'otomatisasi spreadsheet [jumlah data]'\n"
                         f"  - 'lihat memori' / 'simpan memori'\n"
+                        f"  - 'read file [path]' / 'write file [path] [content]'\n"
+                        f"  - 'list directory [path]'\n"
                         f"  - 'shutdown'")
 
     def autonomous_loop_controlled(self, num_cycles=3):

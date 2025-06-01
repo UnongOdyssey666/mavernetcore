@@ -17,8 +17,9 @@ from PIL import Image, ImageDraw, ImageFont
 import google.generativeai as genai
 
 class Nova:
-    def __init__(self, gemini_model=None):
+    def __init__(self, gemini_model=None, admin_mode=False):
         self.name = "Nova"
+        self.admin_mode = admin_mode
         self.skills = [
             "Visualisasi Dashboard",
             "Chart & Grafik Generation", 

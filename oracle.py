@@ -30,8 +30,9 @@ except ImportError:
 import google.generativeai as genai
 
 class Oracle:
-    def __init__(self, gemini_model=None):
+    def __init__(self, gemini_model=None, admin_mode=False):
         self.name = "Oracle"
+        self.admin_mode = admin_mode
         self.skills = [
             "Analisis Prediktif",
             "Perhitungan Statistik Lanjutan",
