@@ -6,27 +6,31 @@ import random
 from datetime import datetime
 from pathlib import Path
 
-# Gemini AI Configuration (Global)
+# Impor library Gemini API
 import google.generativeai as genai
 
-# Configure Gemini with API key from Replit Secrets
-try:
-    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-    global_gemini_model = genai.GenerativeModel('gemini-pro')
-    print("✅ Gemini AI configured successfully")
-except Exception as e:
-    print(f"⚠️ Warning: Gemini AI configuration failed: {e}")
-    global_gemini_model = None
-
 # Impor semua unit AI Anda
+# Pastikan Anda memiliki file-file ini di folder yang sama: zero.py, x.py, nova.py, oracle.py
 from zero import Zero
 from x import XReplica
 from nova import Nova
 from oracle import Oracle
 
+# --- Konfigurasi Global Gemini API ---
+# Pastikan GEMINI_API_KEY sudah disimpan di Replit Secrets Anda
+api_key = os.environ.get("GEMINI_API_KEY")
+if not api_key:
+    print("❌ ERROR: GEMINI_API_KEY not found in Replit Secrets. Gemini AI features will be limited.")
+# Konfigurasi genai di level global, hanya sekali
+genai.configure(api_key=api_key)
+# Inisialisasi model Gemini global
+global_gemini_model = genai.GenerativeModel('gemini-pro')
+print("✅ Gemini AI configured successfully for MAVERNET Core.")
+
+
 class MaverNetSystem:
     def __init__(self):
-        # Inisialisasi semua unit AI dengan Gemini model
+        # Inisialisasi semua unit AI dengan meneruskan model Gemini
         self.zero = Zero(gemini_model=global_gemini_model)
         self.x = XReplica(gemini_model=global_gemini_model)
         self.nova = Nova(gemini_model=global_gemini_model)
@@ -104,18 +108,11 @@ class MaverNetSystem:
                 print(f"🧠 [{unit}]: {thought}")
 
         # Setiap karakter menjalankan aksi otonom mereka
+        # Pastikan method 'autonomous_action' ada di setiap unit
         self.zero.autonomous_action()
         self.x.autonomous_action()
         self.nova.autonomous_action()
         self.oracle.autonomous_action()
-        
-        # Trigger self-reflection periodically
-        if random.random() < 0.3:  # 30% chance for reflection
-            print("\n🧠 [TRIGGERING SELF-REFLECTION CYCLE]")
-            self.zero.self_reflect_and_learn()
-            self.x.self_reflect_and_learn()
-            self.nova.self_reflect_and_learn()
-            self.oracle.self_reflect_and_learn()
 
     def system_boot(self):
         """
@@ -124,20 +121,16 @@ class MaverNetSystem:
         print("🔧 [MAVERNET SYSTEM BOOTING...]")
         print("🚀 Initializing AI-Enhanced Characters...")
 
-        self.load_all_data()  # Memuat semua data (memori dan misi)
+        self.load_all_data() # Memuat semua data (memori dan misi)
 
         # Menginisialisasi Zero dengan loop otonom singkat saat boot
         # Ini akan membuat Zero langsung melakukan beberapa aksi mandiri
-        # Pastikan autonomous_loop_controlled ada di Zero
-        self.zero.autonomous_loop_controlled(num_cycles=1)
-
-        # Asumsi X, Nova, Oracle memiliki method init_logger/get_status yang valid
-        # self.x.init_logger() # Uncomment jika sudah ada
-        # self.nova.get_status() # Uncomment jika sudah ada
-        # self.oracle.get_status() # Uncomment jika sudah ada
+        self.zero.autonomous_loop_controlled(num_cycles=1) 
+        # Unit lain juga bisa punya loop otonom saat boot jika diperlukan
+        # self.x.autonomous_loop_controlled(num_cycles=1) 
 
         # Memulai pemikiran otonom global setelah semua unit online
-        self.ai_autonomous_thinking()
+        self.ai_autonomous_thinking() 
         print("✅ [ALL UNITS ONLINE WITH AI ENHANCEMENT]")
 
     def load_all_data(self):
@@ -147,10 +140,8 @@ class MaverNetSystem:
         print("📥 [LOADING DATA MODULES]")
         try:
             # Memuat data memori untuk semua unit (Zero, X, Nova, Oracle)
-            # Karena Zero memiliki load_memory() sendiri, memori unit lain harus dimuat secara terpisah
-            # Atau, buat method load_memory() di MaverNetSystem untuk memuat semua unit
-            # Untuk saat ini, kita asumsikan Zero.load_memory() sudah cukup.
-            print("📌 Memory data loaded for all units (via individual unit loads).")  # Placeholder
+            # Setiap unit memuat memorinya sendiri via Zero.load_memory()
+            print("📌 Memory data loaded for all units (via individual unit loads).") 
 
             # Memuat data misi
             self.mission_data = self.get_all_missions()
@@ -164,9 +155,10 @@ class MaverNetSystem:
         """
         print("\n🧩 [UNIT STATUS REPORT]")
         print("- ZERO:", self.zero.get_status())
-        print("- X-REPLICA:", self.x.get_status())
+        # Asumsi X, Nova, Oracle memiliki method get_status() yang valid
+        print("- X-REPLICA:", self.x.get_status()) 
         print("- NOVA:", self.nova.get_status())
-        print("- ORACLE:", self.oracle.get_status())
+        print("- ORACLE:", self.oracle.get_status()) 
 
         if self.ai_thoughts:
             print("\n🧠 [CURRENT AI THOUGHTS]")
@@ -183,18 +175,25 @@ class MaverNetSystem:
         # Pastikan direktori 'data' ada
         os.makedirs(os.path.dirname(self.memory_log_path), exist_ok=True)
 
-        all_memory_data = {
-            "Zero": self.zero.memory,
-            "X": self.x.memory,
-            "Nova": self.nova.memory,
-            "Oracle": self.oracle.memory,
-            "ai_thoughts": self.ai_thoughts,
-            "last_updated": datetime.now().isoformat()
-        }
+        # Setiap unit akan memanggil save_memory() mereka sendiri.
+        # Ini lebih modular daripada mencoba mengumpulkannya di sini.
+        self.zero.save_memory()
+        self.x.save_memory()
+        self.nova.save_memory()
+        self.oracle.save_memory()
 
-        with open(self.memory_log_path, "w", encoding='utf-8') as f:
-            json.dump(all_memory_data, f, indent=2)
-        print(f"✅ All memories saved to {self.memory_log_path}")
+        # Simpan juga AI thoughts global jika diperlukan
+        global_mavernet_memory = {
+            "ai_thoughts_global": self.ai_thoughts,
+            "last_updated_global": datetime.now().isoformat()
+        }
+        # Anda bisa menyimpan ini ke file terpisah jika tidak ingin menimpa memory_log.json utama
+        # Misalnya, save ke 'data/mavernet_global_memory.json'
+        # with open("data/mavernet_global_memory.json", "w", encoding='utf-8') as f:
+        #     json.dump(global_mavernet_memory, f, indent=2)
+
+        print(f"✅ All unit memories saved to their respective files in 'data/'.")
+
 
     def auto_github_sync(self):
         """
@@ -207,77 +206,109 @@ class MaverNetSystem:
         print("🌐 Remote sync will be handled by Git integration")
 
 
+    def process_system_command(self, command):
+        """
+        Memproses perintah yang ditujukan untuk keseluruhan sistem MaverNet.
+        """
+        command_lower = command.lower().strip()
+
+        if "system status" in command_lower:
+            self.system_status()
+            return "[MaverNet]: Laporan status sistem ditampilkan di atas."
+        elif "save all memory" in command_lower:
+            self.save_all_memory()
+            return "[MaverNet]: Memori seluruh sistem berhasil disimpan."
+        elif "auto github sync" in command_lower:
+            self.auto_github_sync()
+            return "[MaverNet]: Permintaan sinkronisasi GitHub diproses."
+        elif "mavernet shutdown" in command_lower:
+            # Panggil shutdown Zero, yang akan mengubah status dan mengakhiri loop utama
+            response = self.zero.interact("shutdown")
+            # Pastikan unit lain juga mematikan diri dan menyimpan memori
+            self.x.save_memory()
+            self.nova.save_memory()
+            self.oracle.save_memory()
+            return f"[MaverNet]: Memulai pematian sistem...\n{response}"
+        else:
+            return None # Perintah sistem tidak dikenali
+
+    def route_command_to_unit(self, unit_name, unit_command):
+        """
+        Mengarahkan perintah ke unit AI spesifik.
+        """
+        unit = None
+        if unit_name.lower() == "zero":
+            unit = self.zero
+        elif unit_name.lower() == "x":
+            unit = self.x
+        elif unit_name.lower() == "nova":
+            unit = self.nova
+        elif unit_name.lower() == "oracle":
+            unit = self.oracle
+
+        if unit:
+            print(f"[MaverNet]: Mengarahkan perintah '{unit_command}' ke {unit_name}.")
+            # Asumsi setiap unit memiliki metode 'interact'
+            if hasattr(unit, 'interact'):
+                return unit.interact(unit_command)
+            else:
+                return f"[MaverNet]: Unit {unit_name} tidak memiliki metode 'interact' yang dapat dipanggil."
+        else:
+            return f"[MaverNet]: Unit '{unit_name}' tidak dikenal."
+
+    def process_overall_command(self, command):
+        """
+        Pemroses perintah utama untuk seluruh sistem MaverNet.
+        Mencoba perintah sistem, lalu perintah unit, atau fallback ke Zero.
+        """
+        # 1. Coba perintah sistem terlebih dahulu
+        system_response = self.process_system_command(command)
+        if system_response:
+            return system_response
+
+        # 2. Coba perintah ke unit spesifik
+        # Contoh format: "Zero, jalankan misi X" atau "X, optimalkan data"
+        parts = command.split(",", 1) # Pisahkan di koma pertama
+        if len(parts) == 2:
+            unit_name = parts[0].strip()
+            unit_command = parts[1].strip()
+            return self.route_command_to_unit(unit_name, unit_command)
+
+        # 3. Jika bukan perintah sistem dan bukan perintah unit spesifik,
+        #    maka kirim ke Zero sebagai default
+        print(f"[MaverNet]: Perintah tidak spesifik, meneruskan ke Zero.")
+        return self.zero.interact(command)
+
+
 # --- Jalankan MAVERNET Core Orchestrator ---
 if __name__ == "__main__":
-    # Inisialisasi sistem MAVERNET
-    mavernet = MaverNetSystem()
-    mavernet.system_boot()
+    system = MaverNetSystem()
+    system.system_boot() # Menjalankan proses booting dan inisialisasi
 
-    print("\n🚀 MAVERNET COMMAND DASHBOARD")
-    print("=" * 40)
-    print("Available commands:")
-    print("- 'Zero, [command]' - Direct command to Zero")
-    print("- 'X, [command]' - Direct command to X Replica") 
-    print("- 'Nova, [command]' - Direct command to Nova")
-    print("- 'Oracle, [command]' - Direct command to Oracle")
-    print("- 'System status' - Show system status")
-    print("- 'Save all memory' - Save all unit memories")
-    print("- 'MaverNet shutdown' - Shutdown system")
-    print("- Any other command goes to Zero by default")
-    print("=" * 40)
+    print("\n--- MAVERNET Core Orchestrator: Sistem Aktif ---")
+    print("Ketik perintah. Contoh:")
+    print("  - 'System status' (untuk laporan sistem)")
+    print("  - 'Zero, jalankan misi [deskripsi]' (untuk Zero)")
+    print("  - 'X, baca excel data/sample.xlsx' (untuk X)")
+    print("  - 'Nova, buat grafik bar data 10' (untuk Nova)")
+    print("  - 'Oracle, analisis teks ini adalah contoh' (untuk Oracle)")
+    print("  - 'MaverNet shutdown' (untuk mematikan seluruh sistem)")
 
-    while True:
-        try:
-            user_input = input("\n🎯 MAVERNET > ").strip()
 
-            if not user_input:
-                continue
+    while system.zero.get_status()['current_status'] != "Offline":
+        user_input = input("Komandan: ") # Ganti prompt menjadi 'Komandan' atau sesuai keinginan
 
-            # Parse command untuk menentukan target unit
-            if user_input.lower().startswith("zero,"):
-                command = user_input[5:].strip()
-                response = mavernet.zero.interact(command)
-                print(f"\n🔥 {response}")
+        # Proses perintah melalui MaverNetSystem
+        response = system.process_overall_command(user_input)
+        print(response)
 
-            elif user_input.lower().startswith("x,"):
-                command = user_input[2:].strip()
-                response = mavernet.x.interact(command)
-                print(f"\n🔗 {response}")
+        # Cek status Zero lagi setelah perintah diproses (jika ada shutdown)
+        if system.zero.get_status()['current_status'] == "Offline":
+            break 
 
-            elif user_input.lower().startswith("nova,"):
-                command = user_input[5:].strip()
-                response = mavernet.nova.interact(command)
-                print(f"\n✨ {response}")
+    # Perintah simpan dan sync akan dipanggil saat system_boot (awal)
+    # dan juga saat MaverNet shutdown (di process_system_command)
+    # jadi tidak perlu dipanggil lagi di sini setelah loop
 
-            elif user_input.lower().startswith("oracle,"):
-                command = user_input[7:].strip()
-                response = mavernet.oracle.interact(command)
-                print(f"\n🔮 {response}")
+    print("\n[Sistem MAVERNET]: Sistem telah dimatikan sepenuhnya. Sampai jumpa!")
 
-            # Perintah sistem global
-            elif user_input.lower() == "system status":
-                mavernet.system_status()
-
-            elif user_input.lower() == "save all memory":
-                mavernet.save_all_memory()
-
-            elif user_input.lower() in ["mavernet shutdown", "shutdown", "exit"]:
-                print("\n🛑 MAVERNET Core shutting down...")
-                mavernet.save_all_memory()
-                print("✅ All systems safely terminated. Goodbye!")
-                break
-
-            # Default: kirim ke Zero
-            else:
-                response = mavernet.zero.interact(user_input)
-                print(f"\n🔥 [Default to Zero] {response}")
-
-        except KeyboardInterrupt:
-            print("\n\n🛑 Shutdown initiated by user (Ctrl+C)")
-            mavernet.save_all_memory()
-            print("✅ MAVERNET Core safely terminated.")
-            break
-        except Exception as e:
-            print(f"\n❌ Error in command processing: {str(e)}")
-            print("System continues running...")
-            continue
