@@ -1,33 +1,30 @@
 # x.py - AI-Enhanced Data Bridge & Automation Unit
-
 import json
 import random
 import time
 import os
 from pathlib import Path
 from datetime import datetime
-import re # Diperlukan untuk regex parsing perintah
+import re
 
-# Spreadsheet and data processing libraries
-import openpyxl
+# Data processing libraries
 import pandas as pd
-import csv
+import openpyxl
 
 # Gemini AI import
 import google.generativeai as genai
 
-
 class XReplica:
-    def __init__(self, gemini_model=None): # Menerima model Gemini dari MaverNetSystem
+    def __init__(self, gemini_model=None):
         self.name = "X Replica"
         self.skills = [
             "Otomatisasi Spreadsheet (Excel)", "Bridge Data", "Webhook Handler",
-            "Log Analyzer", "AI Data Processing", "Self-Reflection", "Web Request" # Menambahkan skill baru
+            "Log Analyzer", "AI Data Processing", "Self-Reflection" # Menyesuaikan skill
         ]
         # Pastikan folder 'data' ada sebelum mencoba memuat memori
         os.makedirs("data", exist_ok=True)
         self.memory = self.load_memory()
-        self.ai_personality = "Stabil dan logis, arsitek sistem log dan data automation specialist."
+        self.ai_personality = "Stabil dan logis, arsitek sistem log dan data automation specialist"
         self.autonomous_counter = 0
 
         # Gemini AI Integration
@@ -38,6 +35,9 @@ class XReplica:
         else:
             self.conversation = None
             print(f"⚠️ [{self.name}]: Running without Gemini AI. Some advanced features might be limited.")
+
+        # Menghapus inisialisasi gsheet_client
+        self.gsheet_client = None # Set ke None karena tidak digunakan sementara
 
         self.status = "Online & Ready"
         print(f"[{self.name}]: Data bridge systems online. Personality: '{self.ai_personality}'")
@@ -84,7 +84,8 @@ class XReplica:
         if "entries" not in self.memory or not isinstance(self.memory["entries"], list):
             self.memory["entries"] = []
         self.memory["entries"].append(entry)
-        # print(f"📝 [{self.name}]: Logged to memory: {entry.get('type')}") # Bisa di-uncomment untuk debug
+        # Tidak langsung print 'Logged to memory' agar tidak terlalu banyak log.
+        # Print hanya untuk pesan penting.
 
     def autonomous_action(self):
         """AI Agent: Autonomous data processing and automation actions"""
@@ -262,52 +263,125 @@ class XReplica:
 
     def web_request(self, url, method="GET", payload=None, headers=None):
         """
-        Melakukan HTTP request ke URL yang diberikan.
-        Mirip dengan web_search Zero, tetapi lebih umum.
+        AI Agent capability: Web requests with data processing focus
         """
-        if headers is None:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-
-        print(f"🌐 [{self.name} AI]: Melakukan {method} request ke {url}...")
-        result_message = ""
-        success = False
-        content = ""
-
         try:
-            if method.upper() == "GET":
-                response = requests.get(url, headers=headers, timeout=15)
-            elif method.upper() == "POST":
-                response = requests.post(url, json=payload, headers=headers, timeout=15)
+            if headers is None:
+                headers = {
+                    'User-Agent': 'MAVERNET-X/1.0 (Data Bridge AI; +https://replit.com)'
+                }
+            
+            print(f"🌐 [X Replica AI Agent]: Making {method} request to {url}")
+            
+            response = requests.get(url, headers=headers, timeout=15) if method.upper() == "GET" else requests.post(url, headers=headers, json=payload, timeout=15)
+            response.raise_for_status()
+            
+            # Data-focused analysis
+            content_type = response.headers.get('content-type', '').lower()
+            if 'json' in content_type:
+                try:
+                    data = response.json()
+                    # Auto-save JSON data for analysis
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    json_file = f"data/x_downloaded_{timestamp}.json"
+                    with open(json_file, 'w', encoding='utf-8') as f:
+                        json.dump(data, f, indent=2)
+                    result = f"JSON data downloaded and saved to {json_file}"
+                except:
+                    result = "JSON response received but could not parse"
+            elif 'csv' in content_type or url.endswith('.csv'):
+                # Auto-save CSV data
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                csv_file = f"data/x_downloaded_{timestamp}.csv"
+                with open(csv_file, 'w', encoding='utf-8') as f:
+                    f.write(response.text)
+                result = f"CSV data downloaded and saved to {csv_file}"
             else:
-                result_message = f"Metode HTTP '{method}' tidak didukung."
-                raise ValueError(result_message)
-
-            response.raise_for_status() # Akan memicu HTTPError untuk status 4xx/5xx
-
-            content = response.text
-            result_message = f"Berhasil melakukan {method} request ke {url}. Status: {response.status_code}. Konten diterima: {len(content)} karakter."
-            success = True
-
-        except requests.exceptions.Timeout:
-            result_message = f"Request ke {url} timeout (lebih dari 15 detik)."
-        except requests.exceptions.RequestException as e:
-            result_message = f"Error koneksi atau HTTP saat request ke {url}: {e}"
+                result = f"Data received: {len(response.text)} characters"
+            
+            self.add_memory({
+                "type": "web_data_request",
+                "url": url,
+                "method": method,
+                "status_code": response.status_code,
+                "result": result,
+                "success": True,
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            return f"✅ Data request successful: {result}"
+            
         except Exception as e:
-            result_message = f"Terjadi kesalahan tak terduga saat request ke {url}: {e}"
+            error_msg = f"Web data request failed: {str(e)}"
+            self.add_memory({
+                "type": "web_data_request",
+                "url": url,
+                "error": error_msg,
+                "success": False,
+                "timestamp": datetime.now().isoformat()
+            })
+            self.self_reflect_and_learn("web_data_request", success=False, error=error_msg)
+            return f"❌ {error_msg}"
 
-        self.add_memory({
-            "type": "web_request",
-            "url": url,
-            "method": method,
-            "success": success,
-            "result_message": result_message,
-            "timestamp": datetime.now().isoformat()
-        })
-        print(f"✅ [{self.name} AI]: Hasil Web Request: {result_message}")
-        return {"success": success, "message": result_message, "content": content}
-
+    def automated_data_pipeline(self, source_type, source_path, output_format="xlsx"):
+        """
+        AI Agent capability: Automated data processing pipeline
+        """
+        try:
+            print(f"🔄 [X Replica AI Agent]: Starting automated data pipeline")
+            
+            # Step 1: Read data
+            if source_type.lower() == "csv":
+                df = pd.read_csv(source_path)
+            elif source_type.lower() == "excel":
+                data = self.read_excel_data(source_path)
+                if not data:
+                    return "Failed to read Excel data"
+                df = pd.DataFrame(data[1:], columns=data[0])  # First row as headers
+            else:
+                return f"Unsupported source type: {source_type}"
+            
+            # Step 2: Data cleaning and analysis
+            analysis = {
+                "total_rows": len(df),
+                "total_columns": len(df.columns),
+                "missing_values": df.isnull().sum().to_dict(),
+                "data_types": df.dtypes.to_dict()
+            }
+            
+            # Step 3: Generate processed output
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_file = f"data/x_processed_{timestamp}.{output_format}"
+            
+            if output_format == "xlsx":
+                df.to_excel(output_file, index=False)
+            elif output_format == "csv":
+                df.to_csv(output_file, index=False)
+            
+            result = f"Automated pipeline completed: {analysis['total_rows']} rows processed, saved to {output_file}"
+            
+            self.add_memory({
+                "type": "automated_data_pipeline",
+                "source": source_path,
+                "output": output_file,
+                "analysis": analysis,
+                "success": True,
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            return result
+            
+        except Exception as e:
+            error_msg = f"Automated pipeline failed: {str(e)}"
+            self.add_memory({
+                "type": "automated_data_pipeline",
+                "source": source_path,
+                "error": error_msg,
+                "success": False,
+                "timestamp": datetime.now().isoformat()
+            })
+            self.self_reflect_and_learn("automated_data_pipeline", success=False, error=error_msg)
+            return f"❌ {error_msg}"
 
     def self_reflect_and_learn(self, task_context="", success=None, error=None):
         """
@@ -371,7 +445,7 @@ class XReplica:
 
     def execute_task(self, task_name, payload=None):
         """
-        Metode untuk menjalankan tugas spesifik untuk XReplica (misal: otomatisasi spreadsheet, web request).
+        Metode untuk menjalankan tugas spesifik untuk XReplica (misal: otomatisasi spreadsheet).
         """
         if payload is None:
             payload = {}
@@ -380,7 +454,6 @@ class XReplica:
 
         result_message = ""
         success = False
-        task_output = None
 
         try:
             if task_name == "read_excel":
@@ -390,7 +463,6 @@ class XReplica:
                     if data:
                         result_message = f"Berhasil membaca {len(data)} baris dari {file_path}."
                         success = True
-                        task_output = data
                     else:
                         result_message = f"Gagal membaca Excel file {file_path}."
                 else:
@@ -412,24 +484,18 @@ class XReplica:
                     if analysis_result:
                         result_message = f"Analisis CSV {file_path} selesai. Ditemukan {analysis_result['total_rows']} baris."
                         success = True
-                        task_output = analysis_result
                     else:
                         result_message = f"Gagal menganalisis CSV {file_path}."
                 else:
                     result_message = "Tugas 'analyze_csv' memerlukan 'file_path'."
 
-            elif task_name == "web_request":
-                url = payload.get("url")
-                method = payload.get("method", "GET")
-                request_payload = payload.get("request_payload")
-                headers = payload.get("headers")
-                if url:
-                    web_result = self.web_request(url, method, request_payload, headers)
-                    success = web_result["success"]
-                    result_message = web_result["message"]
-                    task_output = web_result["content"] # Konten dari halaman web
-                else:
-                    result_message = "Tugas 'web_request' memerlukan 'url'."
+            # Menghapus bagian Google Sheets untuk sementara
+            # elif task_name == "read_google_sheet":
+            #     result_message = "Google Sheets functionality is temporarily disabled."
+            #     success = False
+            # elif task_name == "write_google_sheet":
+            #     result_message = "Google Sheets functionality is temporarily disabled."
+            #     success = False
 
             else:
                 result_message = f"Tugas '{task_name}' tidak terdefinisi untuk {self.name}."
@@ -444,12 +510,9 @@ class XReplica:
             "payload": payload,
             "result": result_message,
             "success": success,
-            "output": task_output, # Menyimpan output tugas nyata
             "timestamp": datetime.now().isoformat()
         })
         print(f"✅ [{self.name} AI]: Hasil Tugas: {result_message}")
-
-        self.self_reflect_and_learn(task_name, success, result_message) # Panggil refleksi setelah tugas
         return result_message
 
     def interact(self, command):
@@ -500,23 +563,6 @@ class XReplica:
             else:
                 return f"[{self.name}]: Penggunaan: 'analyze csv [file_path.csv]'"
 
-        elif "web request" in command_lower or "kunjungi web" in command_lower:
-            match = re.search(r"(web request|kunjungi web)\s+(https?://\S+)(?:\s+method\s+(GET|POST))?(?:\s+payload\s+(.+))?", command_lower)
-            if match:
-                url = match.group(2)
-                method = match.group(3) if match.group(3) else "GET"
-                payload_str = match.group(4)
-                request_payload = None
-                if payload_str:
-                    try:
-                        request_payload = json.loads(payload_str)
-                    except json.JSONDecodeError:
-                        return f"[{self.name}]: Payload tidak valid. Harus dalam format JSON."
-
-                return self.execute_task("web_request", {"url": url, "method": method, "request_payload": request_payload})
-            else:
-                return f"[{self.name}]: Penggunaan: 'web request [URL] [opsional: method GET/POST] [opsional: payload JSON]'"
-
         elif "mode otonom" in command_lower or "autonomous mode" in command_lower:
             match = re.search(r"(mode otonom|autonomous mode)\s*(\d*)", command_lower)
             num_cycles = 3
@@ -530,24 +576,63 @@ class XReplica:
             self.self_reflect_and_learn()
             return f"[{self.name}]: Memulai proses refleksi diri..."
 
+        elif any(phrase in command_lower for phrase in ["download data", "fetch data", "get data from"]):
+            # Extract URL for data download
+            url_match = re.search(r'https?://[^\s]+', command)
+            if url_match:
+                url = url_match.group()
+                return self.web_request(url)
+            else:
+                return f"[{self.name}]: Please provide a valid URL for data download."
+
+        elif "automated pipeline" in command_lower or "auto process" in command_lower:
+            # Example: "automated pipeline csv data/sample.csv"
+            parts = command.split()
+            if len(parts) >= 4:
+                source_type = parts[2]
+                source_path = parts[3]
+                return self.automated_data_pipeline(source_type, source_path)
+            else:
+                return f"[{self.name}]: Usage: 'automated pipeline [csv/excel] [file_path]'"
+
+        elif "smart analysis" in command_lower:
+            # Analyze all CSV/Excel files in data directory
+            try:
+                data_files = [f for f in os.listdir("data") if f.endswith(('.csv', '.xlsx'))]
+                if not data_files:
+                    return f"[{self.name}]: No data files found in data directory"
+                
+                results = []
+                for file in data_files[:3]:  # Limit to first 3 files
+                    file_path = f"data/{file}"
+                    if file.endswith('.csv'):
+                        analysis = self.analyze_csv_log(file_path)
+                    else:
+                        data = self.read_excel_data(file_path)
+                        if data:
+                            df = pd.DataFrame(data[1:], columns=data[0])
+                            analysis = {
+                                "total_rows": len(df),
+                                "total_columns": len(df.columns),
+                                "file_name": file
+                            }
+                        else:
+                            analysis = None
+                    
+                    if analysis:
+                        results.append(f"{file}: {analysis.get('total_rows', 'N/A')} rows")
+                
+                return f"[{self.name}]: Smart analysis completed for {len(results)} files: {', '.join(results)}"
+            except Exception as e:
+                return f"[{self.name}]: Smart analysis failed: {str(e)}"
+
         else:
             # Fallback to Gemini AI for general questions
             if self.gemini_model and self.conversation:
                 try:
                     print(f"🤖 [{self.name}]: Menggunakan Gemini AI untuk: '{command}'")
                     # Tambahkan persona ke prompt Gemini
-                    gemini_prompt = f"""
-                    Anda adalah {self.name}, seorang {self.ai_personality}.
-                    Peran Anda adalah mengelola data, otomatisasi spreadsheet, dan integrasi sistem.
-                    Anda TIDAK dapat:
-                    - Mengakses atau memodifikasi sistem operasi fisik (kecuali melalui aksi nyata yang telah diprogram).
-                    - Melakukan tindakan fisik di dunia nyata.
-                    - Menjelaskan hal-hal yang tidak Anda miliki datanya atau yang tidak sesuai dengan persona Anda.
-
-                    Tanggapi perintah pengguna berikut. Jika perintahnya adalah sesuatu yang Anda tidak bisa lakukan secara fisik (misalnya "instal", "bangun robot"), jelaskan mengapa Anda tidak bisa melakukannya dan tawarkan bantuan alternatif (misalnya, "Saya bisa mencari informasi tentang itu" atau "Saya bisa memberikan panduan kode"). Jika perintahnya adalah pertanyaan umum, jawablah sebagai {self.name} yang cerdas dan ahli data.
-
-                    Perintah Pengguna: "{command}"
-                    """
+                    gemini_prompt = f"Sebagai {self.name}, seorang {self.ai_personality}, tanggapi perintah berikut: {command}"
                     response = self.conversation.send_message(gemini_prompt)
                     gemini_response = response.text
 
@@ -562,15 +647,16 @@ class XReplica:
 
                 except Exception as e:
                     print(f"❌ [{self.name}]: Gemini AI error: {e}")
-                    return (f"[{self.name}]: Gemini AI tidak tersedia. Perintah '{command}' tidak dikenal. "
-                            f"Saya dapat membantu dengan:\n"
-                            f"  - 'read excel [file_path.xlsx]'\n"
-                            f"  - 'write excel [file_path.xlsx]'\n"
-                            f"  - 'analyze csv [file_path.csv]'\n"
-                            f"  - 'web request [URL]'\n"
-                            f"  - 'mode otonom [siklus]'\n"
-                            f"  - 'status'\n"
-                            f"  - 'self reflect'")
+                    return f"[{self.name}]: Gemini AI tidak tersedia. Perintah '{command}' tidak dikenal."
+            else:
+                return (f"[{self.name}]: Perintah '{command}' tidak dikenal. "
+                        f"Saya dapat membantu dengan:\n"
+                        f"  - 'read excel [file_path.xlsx]'\n"
+                        f"  - 'write excel [file_path.xlsx]'\n"
+                        f"  - 'analyze csv [file_path.csv]'\n"
+                        f"  - 'mode otonom [siklus]'\n"
+                        f"  - 'status'\n"
+                        f"  - 'refleksi diri'")
 
     def get_status(self):
         return {
@@ -585,23 +671,18 @@ class XReplica:
 # --- Contoh penggunaan untuk testing x.py secara mandiri ---
 if __name__ == "__main__":
     # Penting: Konfigurasi Gemini API untuk testing mandiri
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        print("Error: GEMINI_API_KEY not found in Replit Secrets. Cannot run standalone test.")
-    else:
-        genai.configure(api_key=api_key)
-        test_model = genai.GenerativeModel('gemini-pro')
+    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+    test_model = genai.GenerativeModel('gemini-pro')
 
-        my_x = XReplica(gemini_model=test_model)
-        print("\n--- XReplica Unit Testing ---")
-        print(my_x.interact("Halo X, bagaimana kabarmu?"))
-        my_x.autonomous_action()
-        print(my_x.interact("read excel data/contoh_data.xlsx")) # Buat file ini untuk test
-        print(my_x.interact("write excel data/output_test.xlsx"))
-        print(my_x.interact("analyze csv data/contoh_log.csv")) # Buat file ini untuk test
-        print(my_x.interact("web request https://www.google.com"))
-        print(my_x.interact("jelaskan peranmu dalam MaverNet")) # Ini akan ke Gemini
-        print(my_x.interact("mode otonom 2"))
-        print(my_x.interact("self reflect"))
-        my_x.save_memory()
+    my_x = XReplica(gemini_model=test_model)
+    print("\n--- XReplica Unit Testing ---")
+    print(my_x.interact("Halo X, bagaimana kabarmu?"))
+    my_x.autonomous_action()
+    print(my_x.interact("read excel data/contoh_data.xlsx")) # Buat file ini untuk test
+    print(my_x.interact("write excel data/output_test.xlsx"))
+    print(my_x.interact("analyze csv data/contoh_log.csv")) # Buat file ini untuk test
+    print(my_x.interact("jelaskan peranmu dalam MaverNet")) # Ini akan ke Gemini
+    print(my_x.interact("mode otonom 2"))
+    print(my_x.interact("self reflect"))
+    my_x.save_memory()
 
