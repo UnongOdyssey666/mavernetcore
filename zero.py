@@ -203,6 +203,32 @@ class Zero:
                 result_message = f"Simulasi otomatisasi spreadsheet: {action} untuk {data_points} data_points selesai."
                 success = True
 
+            elif task_name == "youtube_search":
+                # YouTube API search (requires API key)
+                if payload and "query" in payload:
+                    try:
+                        # Note: This requires YouTube Data API v3 key
+                        # For now, simulate the response
+                        print(f"🔴 [Zero] YouTube search simulation for: {payload['query']}")
+                        print("💡 To use real YouTube API:")
+                        print("   1. Get API key from Google Cloud Console")
+                        print("   2. Enable YouTube Data API v3")
+                        print("   3. Set API_KEY environment variable")
+
+                        # Simulated result
+                        result_message = f"YouTube search simulated for '{payload['query']}' - 5 videos found"
+                        self.add_memory({
+                            "type": "youtube_search_simulated",
+                            "query": payload["query"],
+                            "timestamp": datetime.now().isoformat()
+                        })
+
+                        success = True
+                    except Exception as e:
+                        result_message = f"YouTube search error: {str(e)}"
+                else:
+                    result_message = "YouTube search requires 'query' in payload"
+
             else:
                 result_message = f"Tugas '{task_name}' tidak terdefinisi atau tidak dapat dijalankan."
 
@@ -379,4 +405,3 @@ if __name__ == "__main__":
         print(response)
 
     print("\n[Sistem]: Zero telah dimatikan.")
-

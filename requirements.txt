@@ -1,0 +1,25 @@
+
+# MAVERNET Core Dependencies
+# ===========================
+
+# Core AI and Web Functionality
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# Data Processing and Spreadsheet
+openpyxl>=3.1.0
+pandas>=2.0.0
+
+# YouTube API (optional - requires API key)
+google-api-python-client>=2.0.0
+google-auth>=2.0.0
+google-auth-oauthlib>=1.0.0
+google-auth-httplib2>=0.2.0
+
+# Visualization Libraries (for Nova)
+matplotlib>=3.7.0
+plotly>=5.17.0
+
+# Additional utilities
+pathlib2>=2.3.7
+python-dateutil>=2.8.2

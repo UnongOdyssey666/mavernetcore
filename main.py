@@ -194,31 +194,75 @@ class MaverNetSystem:
 
 # --- Jalankan MAVERNET Core Orchestrator ---
 if __name__ == "__main__":
-    system = MaverNetSystem()
-    system.system_boot()  # Menjalankan proses booting dan inisialisasi
+    # Inisialisasi sistem MAVERNET
+    mavernet = MaverNetSystem()
+    mavernet.system_boot()
 
-    print("\n--- MAVERNET Core Orchestrator: Sistem Aktif ---")
-    print("Ketik perintah untuk berinteraksi dengan Zero. Ketik 'shutdown' untuk mematikan sistem.")
+    print("\n🚀 MAVERNET COMMAND DASHBOARD")
+    print("=" * 40)
+    print("Available commands:")
+    print("- 'Zero, [command]' - Direct command to Zero")
+    print("- 'X, [command]' - Direct command to X Replica") 
+    print("- 'Nova, [command]' - Direct command to Nova")
+    print("- 'Oracle, [command]' - Direct command to Oracle")
+    print("- 'System status' - Show system status")
+    print("- 'Save all memory' - Save all unit memories")
+    print("- 'MaverNet shutdown' - Shutdown system")
+    print("- Any other command goes to Zero by default")
+    print("=" * 40)
 
-    # Loop utama untuk sesi tanya jawab interaktif
-    while system.zero.get_status()['current_status'] != "Offline":
-        user_input = input("Anda: ")  # Minta input dari pengguna
+    while True:
+        try:
+            user_input = input("\n🎯 MAVERNET > ").strip()
 
-        # Kirim perintah ke unit Zero untuk diproses
-        response_from_zero = system.zero.interact(user_input)
-        print(response_from_zero)
+            if not user_input:
+                continue
 
-        # Jika Zero merespons 'shutdown', maka kita bisa mengakhiri loop di MaverNetSystem
-        if system.zero.get_status()['current_status'] == "Offline":
-            break  # Keluar dari loop 'while' ini
+            # Parse command untuk menentukan target unit
+            if user_input.lower().startswith("zero,"):
+                command = user_input[5:].strip()
+                response = mavernet.zero.interact(command)
+                print(f"\n🔥 {response}")
 
-        # Setelah setiap interaksi, Anda bisa memilih untuk menampilkan status sistem
-        # Atau memicu AI autonomous thinking secara berkala
-        # system.system_status() # Uncomment ini jika Anda ingin melihat status setelah setiap interaksi
+            elif user_input.lower().startswith("x,"):
+                command = user_input[2:].strip()
+                response = mavernet.x.interact(command)
+                print(f"\n🔗 {response}")
 
-    # Setelah loop berakhir (karena shutdown), simpan semua memori
-    system.save_all_memory()
-    # Dan lakukan simulasi sync GitHub terakhir
-    system.auto_github_sync()
+            elif user_input.lower().startswith("nova,"):
+                command = user_input[5:].strip()
+                response = mavernet.nova.interact(command)
+                print(f"\n✨ {response}")
 
-    print("\n[Sistem MAVERNET]: Sistem telah dimatikan sepenuhnya. Sampai jumpa!")
+            elif user_input.lower().startswith("oracle,"):
+                command = user_input[7:].strip()
+                response = mavernet.oracle.interact(command)
+                print(f"\n🔮 {response}")
+
+            # Perintah sistem global
+            elif user_input.lower() == "system status":
+                mavernet.system_status()
+
+            elif user_input.lower() == "save all memory":
+                mavernet.save_all_memory()
+
+            elif user_input.lower() in ["mavernet shutdown", "shutdown", "exit"]:
+                print("\n🛑 MAVERNET Core shutting down...")
+                mavernet.save_all_memory()
+                print("✅ All systems safely terminated. Goodbye!")
+                break
+
+            # Default: kirim ke Zero
+            else:
+                response = mavernet.zero.interact(user_input)
+                print(f"\n🔥 [Default to Zero] {response}")
+
+        except KeyboardInterrupt:
+            print("\n\n🛑 Shutdown initiated by user (Ctrl+C)")
+            mavernet.save_all_memory()
+            print("✅ MAVERNET Core safely terminated.")
+            break
+        except Exception as e:
+            print(f"\n❌ Error in command processing: {str(e)}")
+            print("System continues running...")
+            continue
