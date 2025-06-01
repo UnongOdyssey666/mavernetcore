@@ -5,7 +5,11 @@ import time
 import os
 from pathlib import Path
 from datetime import datetime
-import re # Tambahkan ini untuk parsing perintah Regex di interact()
+import re
+
+# Data processing libraries
+import pandas as pd
+import openpyxl
 
 # Gemini AI import
 import google.generativeai as genai
