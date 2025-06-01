@@ -14,5 +14,12 @@ else:
             if 'generateContent' in m.supported_generation_methods:
                 print(f"- {m.name}")
         print("--- End of list ---")
+        
+        # Test the new model
+        print("\n--- Testing gemini-1.5-flash model ---")
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content("Hello, this is a test message.")
+        print(f"✅ Model test successful: {response.text[:50]}...")
+        
     except Exception as e:
-        print(f"Error listing models: {e}")
+        print(f"Error: {e}")

@@ -19,13 +19,35 @@ from oracle import Oracle
 # --- Konfigurasi Global Gemini API ---
 # Pastikan GEMINI_API_KEY sudah disimpan di Replit Secrets Anda
 api_key = os.environ.get("GEMINI_API_KEY")
+global_gemini_model = None
+
 if not api_key:
     print("❌ ERROR: GEMINI_API_KEY not found in Replit Secrets. Gemini AI features will be limited.")
-# Konfigurasi genai di level global, hanya sekali
-genai.configure(api_key=api_key)
-# Inisialisasi model Gemini global
-global_gemini_model = genai.GenerativeModel('gemini-pro')
-print("✅ Gemini AI configured successfully for MAVERNET Core.")
+else:
+    try:
+        # Konfigurasi genai di level global, hanya sekali
+        genai.configure(api_key=api_key)
+        
+        # Try different model names in order of preference
+        model_names = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
+        
+        for model_name in model_names:
+            try:
+                global_gemini_model = genai.GenerativeModel(model_name)
+                # Test the model with a simple request
+                test_response = global_gemini_model.generate_content("Hello")
+                print(f"✅ Gemini AI configured successfully with model: {model_name}")
+                break
+            except Exception as model_error:
+                print(f"⚠️ Model {model_name} not available: {str(model_error)}")
+                continue
+        
+        if global_gemini_model is None:
+            print("❌ ERROR: No Gemini models are available. Running without AI features.")
+            
+    except Exception as e:
+        print(f"❌ ERROR configuring Gemini AI: {str(e)}. Running without AI features.")
+        global_gemini_model = None
 
 
 class MaverNetSystem:
