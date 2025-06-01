@@ -1,0 +1,56 @@
+# .github/workflows/mavernet_ci.yml
+
+name: MaverNet CI Checks
+
+on:
+  push:
+    branches:
+      - main # Memicu workflow ini setiap kali ada push ke branch 'main'
+  pull_request:
+    branches:
+      - main # Memicu workflow ini setiap kali ada pull request ke branch 'main'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest # Menggunakan sistem operasi Ubuntu terbaru
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4 # Mengambil kode dari repositori
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x' # Menggunakan versi Python terbaru
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip # Memastikan pip terbaru
+        pip install -r requirements.txt # Menginstal semua dependensi dari requirements.txt
+
+    - name: Run MaverNet Boot Test
+      env:
+        # PENTING: Untuk menjalankan ini, Anda perlu menyimpan API key Gemini Anda
+        # sebagai GitHub Secret (bukan Replit Secret) di repositori Anda.
+        # Caranya: Repo Anda -> Settings -> Secrets and variables -> Actions -> New repository secret
+        # Nama: GEMINI_API_KEY, Nilai: API Key Gemini Anda.
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} 
+      run: |
+        # Buat folder data jika belum ada (dibutuhkan untuk memori unit)
+        mkdir -p data
+        # Jalankan main.py. Karena ini CI, mungkin tidak akan berinteraksi,
+        # tapi akan memeriksa apakah booting dan inisialisasi berhasil tanpa error.
+        # Anda mungkin perlu menyesuaikan agar main.py keluar setelah booting.
+        # Atau buat skrip terpisah yang hanya menjalankan inisialisasi tanpa loop interaktif.
+        echo "Running main.py for boot test. This might hang if main.py doesn't exit."
+        python main.py <<EOF
+        MaverNet shutdown
+        EOF
+        # Perintah 'MaverNet shutdown' di atas adalah upaya untuk mematikan program secara otomatis
+        # agar workflow tidak "hang" menunggu input. Pastikan Zero menangani shutdown dengan cepat.
+
+    - name: Verify Memory Files (Optional)
+      run: |
+        ls -l data/
+        cat data/zero_memory_log.json # Menampilkan isi file memori Zero (untuk debug)
+
