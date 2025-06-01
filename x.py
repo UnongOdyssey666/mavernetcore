@@ -261,6 +261,128 @@ class XReplica:
             self.self_reflect_and_learn("analyze_csv_log", success=False, error=error_msg)
             return None
 
+    def web_request(self, url, method="GET", payload=None, headers=None):
+        """
+        AI Agent capability: Web requests with data processing focus
+        """
+        try:
+            if headers is None:
+                headers = {
+                    'User-Agent': 'MAVERNET-X/1.0 (Data Bridge AI; +https://replit.com)'
+                }
+            
+            print(f"🌐 [X Replica AI Agent]: Making {method} request to {url}")
+            
+            response = requests.get(url, headers=headers, timeout=15) if method.upper() == "GET" else requests.post(url, headers=headers, json=payload, timeout=15)
+            response.raise_for_status()
+            
+            # Data-focused analysis
+            content_type = response.headers.get('content-type', '').lower()
+            if 'json' in content_type:
+                try:
+                    data = response.json()
+                    # Auto-save JSON data for analysis
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    json_file = f"data/x_downloaded_{timestamp}.json"
+                    with open(json_file, 'w', encoding='utf-8') as f:
+                        json.dump(data, f, indent=2)
+                    result = f"JSON data downloaded and saved to {json_file}"
+                except:
+                    result = "JSON response received but could not parse"
+            elif 'csv' in content_type or url.endswith('.csv'):
+                # Auto-save CSV data
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                csv_file = f"data/x_downloaded_{timestamp}.csv"
+                with open(csv_file, 'w', encoding='utf-8') as f:
+                    f.write(response.text)
+                result = f"CSV data downloaded and saved to {csv_file}"
+            else:
+                result = f"Data received: {len(response.text)} characters"
+            
+            self.add_memory({
+                "type": "web_data_request",
+                "url": url,
+                "method": method,
+                "status_code": response.status_code,
+                "result": result,
+                "success": True,
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            return f"✅ Data request successful: {result}"
+            
+        except Exception as e:
+            error_msg = f"Web data request failed: {str(e)}"
+            self.add_memory({
+                "type": "web_data_request",
+                "url": url,
+                "error": error_msg,
+                "success": False,
+                "timestamp": datetime.now().isoformat()
+            })
+            self.self_reflect_and_learn("web_data_request", success=False, error=error_msg)
+            return f"❌ {error_msg}"
+
+    def automated_data_pipeline(self, source_type, source_path, output_format="xlsx"):
+        """
+        AI Agent capability: Automated data processing pipeline
+        """
+        try:
+            print(f"🔄 [X Replica AI Agent]: Starting automated data pipeline")
+            
+            # Step 1: Read data
+            if source_type.lower() == "csv":
+                df = pd.read_csv(source_path)
+            elif source_type.lower() == "excel":
+                data = self.read_excel_data(source_path)
+                if not data:
+                    return "Failed to read Excel data"
+                df = pd.DataFrame(data[1:], columns=data[0])  # First row as headers
+            else:
+                return f"Unsupported source type: {source_type}"
+            
+            # Step 2: Data cleaning and analysis
+            analysis = {
+                "total_rows": len(df),
+                "total_columns": len(df.columns),
+                "missing_values": df.isnull().sum().to_dict(),
+                "data_types": df.dtypes.to_dict()
+            }
+            
+            # Step 3: Generate processed output
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_file = f"data/x_processed_{timestamp}.{output_format}"
+            
+            if output_format == "xlsx":
+                df.to_excel(output_file, index=False)
+            elif output_format == "csv":
+                df.to_csv(output_file, index=False)
+            
+            result = f"Automated pipeline completed: {analysis['total_rows']} rows processed, saved to {output_file}"
+            
+            self.add_memory({
+                "type": "automated_data_pipeline",
+                "source": source_path,
+                "output": output_file,
+                "analysis": analysis,
+                "success": True,
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            return result
+            
+        except Exception as e:
+            error_msg = f"Automated pipeline failed: {str(e)}"
+            self.add_memory({
+                "type": "automated_data_pipeline",
+                "source": source_path,
+                "error": error_msg,
+                "success": False,
+                "timestamp": datetime.now().isoformat()
+            })
+            self.self_reflect_and_learn("automated_data_pipeline", success=False, error=error_msg)
+            return f"❌ {error_msg}"
+
     def self_reflect_and_learn(self, task_context="", success=None, error=None):
         """
         Self-reflection and learning using Gemini AI.
@@ -453,6 +575,56 @@ class XReplica:
         elif "self reflect" in command_lower or "refleksi diri" in command_lower:
             self.self_reflect_and_learn()
             return f"[{self.name}]: Memulai proses refleksi diri..."
+
+        elif any(phrase in command_lower for phrase in ["download data", "fetch data", "get data from"]):
+            # Extract URL for data download
+            url_match = re.search(r'https?://[^\s]+', command)
+            if url_match:
+                url = url_match.group()
+                return self.web_request(url)
+            else:
+                return f"[{self.name}]: Please provide a valid URL for data download."
+
+        elif "automated pipeline" in command_lower or "auto process" in command_lower:
+            # Example: "automated pipeline csv data/sample.csv"
+            parts = command.split()
+            if len(parts) >= 4:
+                source_type = parts[2]
+                source_path = parts[3]
+                return self.automated_data_pipeline(source_type, source_path)
+            else:
+                return f"[{self.name}]: Usage: 'automated pipeline [csv/excel] [file_path]'"
+
+        elif "smart analysis" in command_lower:
+            # Analyze all CSV/Excel files in data directory
+            try:
+                data_files = [f for f in os.listdir("data") if f.endswith(('.csv', '.xlsx'))]
+                if not data_files:
+                    return f"[{self.name}]: No data files found in data directory"
+                
+                results = []
+                for file in data_files[:3]:  # Limit to first 3 files
+                    file_path = f"data/{file}"
+                    if file.endswith('.csv'):
+                        analysis = self.analyze_csv_log(file_path)
+                    else:
+                        data = self.read_excel_data(file_path)
+                        if data:
+                            df = pd.DataFrame(data[1:], columns=data[0])
+                            analysis = {
+                                "total_rows": len(df),
+                                "total_columns": len(df.columns),
+                                "file_name": file
+                            }
+                        else:
+                            analysis = None
+                    
+                    if analysis:
+                        results.append(f"{file}: {analysis.get('total_rows', 'N/A')} rows")
+                
+                return f"[{self.name}]: Smart analysis completed for {len(results)} files: {', '.join(results)}"
+            except Exception as e:
+                return f"[{self.name}]: Smart analysis failed: {str(e)}"
 
         else:
             # Fallback to Gemini AI for general questions

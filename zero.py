@@ -162,6 +162,77 @@ class Zero:
         self.status = "Online & Idle"
         return result_message
 
+    def web_request(self, url, method="GET", payload=None, headers=None):
+        """
+        AI Agent capability: Make real web requests with advanced error handling
+        """
+        try:
+            if headers is None:
+                headers = {
+                    'User-Agent': 'MAVERNET-Zero/1.0 (AI Agent; +https://replit.com)'
+                }
+            
+            print(f"🌐 [Zero AI Agent]: Making {method} request to {url}")
+            
+            if method.upper() == "GET":
+                response = requests.get(url, headers=headers, timeout=15)
+            elif method.upper() == "POST":
+                response = requests.post(url, headers=headers, json=payload, timeout=15)
+            else:
+                return f"Unsupported HTTP method: {method}"
+            
+            response.raise_for_status()
+            
+            # Smart content analysis
+            content_type = response.headers.get('content-type', '').lower()
+            if 'json' in content_type:
+                data = response.json()
+                result = f"JSON response received with {len(data)} items" if isinstance(data, list) else f"JSON object with {len(data.keys())} keys" if isinstance(data, dict) else "JSON data received"
+            elif 'html' in content_type:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                title = soup.find('title')
+                result = f"HTML page: {title.text.strip() if title else 'No title'} (Length: {len(response.text)} chars)"
+            else:
+                result = f"Response received: {len(response.text)} characters, Type: {content_type}"
+            
+            self.add_memory({
+                "type": "web_request",
+                "url": url,
+                "method": method,
+                "status_code": response.status_code,
+                "result": result,
+                "success": True,
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            return f"✅ Web request successful: {result}"
+            
+        except requests.exceptions.Timeout:
+            error_msg = f"Request timeout after 15 seconds for {url}"
+            self.add_memory({
+                "type": "web_request",
+                "url": url,
+                "method": method,
+                "error": error_msg,
+                "success": False,
+                "timestamp": datetime.now().isoformat()
+            })
+            self.self_reflect_and_learn("web_request", success=False, error=error_msg)
+            return f"❌ {error_msg}"
+            
+        except Exception as e:
+            error_msg = f"Web request failed: {str(e)}"
+            self.add_memory({
+                "type": "web_request",
+                "url": url,
+                "method": method,
+                "error": error_msg,
+                "success": False,
+                "timestamp": datetime.now().isoformat()
+            })
+            self.self_reflect_and_learn("web_request", success=False, error=error_msg)
+            return f"❌ {error_msg}"
+
     def execute_task(self, task_name, payload=None):
         """
         Metode untuk menjalankan tugas spesifik dengan parameter payload.
@@ -306,22 +377,33 @@ class Zero:
             else:
                 return f"[{self.name}]: Saya sudah dalam mode otonom."
 
-        # Command for web search
-        elif "cari di web" in command_lower or "web search" in command_lower:
-            # Contoh parsing payload dari perintah: "cari di web [url] keyword [keyword]"
-            # Ini parsing yang lebih robust
-            parts = command_lower.split("keyword")
-            if len(parts) == 2:
-                url_candidate = parts[0].replace("cari di web", "").replace("web search", "").strip()
-                keyword_candidate = parts[1].strip()
-
-                if url_candidate.startswith("http://") or url_candidate.startswith("https://"):
-                    payload_data = {"url": url_candidate, "keyword": keyword_candidate}
-                    return self.execute_task("web_search", payload_data)
-                else:
-                    return f"[{self.name}]: Format URL tidak valid. Gunakan 'cari di web [http(s)://URL] keyword [KEYWORD].'"
+        # Enhanced web interaction commands with flexible parsing
+        elif any(phrase in command_lower for phrase in ["cari di web", "web search", "visit website", "kunjungi", "browse to"]):
+            # Flexible URL extraction
+            url_match = re.search(r'https?://[^\s]+', command)
+            if url_match:
+                url = url_match.group()
+                return self.web_request(url)
             else:
-                return f"[{self.name}]: Format perintah web search salah. Gunakan 'cari di web [URL] keyword [KEYWORD].'"
+                # Try to extract URL without protocol
+                url_match = re.search(r'(www\.)?[\w.-]+\.\w+', command)
+                if url_match:
+                    url = "https://" + url_match.group()
+                    return self.web_request(url)
+                else:
+                    return f"[{self.name}]: No valid URL found. Please include a website URL."
+
+        # Advanced web search with keyword
+        elif "search for" in command_lower or "cari keyword" in command_lower:
+            # Extract search terms
+            search_match = re.search(r'(search for|cari keyword)\s+(.+)', command_lower)
+            if search_match:
+                search_term = search_match.group(2).strip()
+                # Use DuckDuckGo search (no API key needed)
+                search_url = f"https://duckduckgo.com/html/?q={search_term.replace(' ', '+')}"
+                return self.web_request(search_url)
+            else:
+                return f"[{self.name}]: Please specify what to search for."
 
         # Command for simulating spreadsheet automation
         elif "otomatisasi spreadsheet" in command_lower:

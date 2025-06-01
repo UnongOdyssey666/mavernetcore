@@ -3,6 +3,7 @@ import json
 import os
 import time
 import random
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -280,25 +281,52 @@ class MaverNetSystem:
 
     def process_overall_command(self, command):
         """
-        Pemroses perintah utama untuk seluruh sistem MaverNet.
-        Mencoba perintah sistem, lalu perintah unit, atau fallback ke Zero.
+        Pemroses perintah utama untuk seluruh sistem MaverNet dengan AI Agent-like parsing.
+        Mencoba perintah sistem, lalu perintah unit dengan parsing fleksibel, atau fallback ke Zero.
         """
         # 1. Coba perintah sistem terlebih dahulu
         system_response = self.process_system_command(command)
         if system_response:
             return system_response
 
-        # 2. Coba perintah ke unit spesifik
-        # Contoh format: "Zero, jalankan misi X" atau "X, optimalkan data"
-        parts = command.split(",", 1) # Pisahkan di koma pertama
-        if len(parts) == 2:
-            unit_name = parts[0].strip()
-            unit_command = parts[1].strip()
+        # 2. Flexible unit targeting dengan berbagai pola
+        # Pola 1: "Zero, [command]" atau "X, [command]"
+        comma_match = re.match(r'^(zero|x|nova|oracle|x\s*replica)\s*,\s*(.+)', command, re.IGNORECASE)
+        if comma_match:
+            unit_name = comma_match.group(1).strip()
+            unit_command = comma_match.group(2).strip()
             return self.route_command_to_unit(unit_name, unit_command)
 
-        # 3. Jika bukan perintah sistem dan bukan perintah unit spesifik,
-        #    maka kirim ke Zero sebagai default
-        print(f"[MaverNet]: Perintah tidak spesifik, meneruskan ke Zero.")
+        # Pola 2: "Tell Zero to [command]" atau "Ask Nova to [command]"
+        tell_match = re.match(r'^(tell|ask|command)\s+(zero|x|nova|oracle|x\s*replica)\s+to\s+(.+)', command, re.IGNORECASE)
+        if tell_match:
+            unit_name = tell_match.group(2).strip()
+            unit_command = tell_match.group(3).strip()
+            return self.route_command_to_unit(unit_name, unit_command)
+
+        # Pola 3: "[Unit] [command]" tanpa koma
+        unit_direct_match = re.match(r'^(zero|x|nova|oracle|x\s*replica)\s+(.+)', command, re.IGNORECASE)
+        if unit_direct_match:
+            unit_name = unit_direct_match.group(1).strip()
+            unit_command = unit_direct_match.group(2).strip()
+            return self.route_command_to_unit(unit_name, unit_command)
+
+        # Pola 4: Deteksi kata kunci untuk auto-routing ke unit yang tepat
+        command_lower = command.lower()
+        
+        # Auto-route berdasarkan kata kunci
+        if any(keyword in command_lower for keyword in ['excel', 'csv', 'spreadsheet', 'data automation', 'webhook']):
+            print(f"[MaverNet]: Auto-routing to X (Data specialist) based on keywords.")
+            return self.x.interact(command)
+        elif any(keyword in command_lower for keyword in ['chart', 'graph', 'visual', 'html', 'ui', 'dashboard']):
+            print(f"[MaverNet]: Auto-routing to Nova (Visual specialist) based on keywords.")
+            return self.nova.interact(command)
+        elif any(keyword in command_lower for keyword in ['analyze', 'statistics', 'predict', 'intelligence', 'threat', 'strategic']):
+            print(f"[MaverNet]: Auto-routing to Oracle (Analysis specialist) based on keywords.")
+            return self.oracle.interact(command)
+
+        # 3. Fallback ke Zero sebagai default
+        print(f"[MaverNet]: No specific unit detected, routing to Zero (Default executor).")
         return self.zero.interact(command)
 
 
