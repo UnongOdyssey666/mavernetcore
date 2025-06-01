@@ -4,13 +4,17 @@ import random
 import time
 from pathlib import Path
 from datetime import datetime
+import os
 
 # Import library untuk Web Scraping / Interaksi Web
 import requests
 from bs4 import BeautifulSoup
 
+# Gemini AI import
+import google.generativeai as genai
+
 class Zero:
-    def __init__(self):
+    def __init__(self, gemini_model=None):
         """
         Inisialisasi Unit Eksekutor AI Zero.
         Mengatur atribut dasar Zero seperti nama, skill, memori, dan kepribadian AI.
@@ -23,6 +27,15 @@ class Zero:
         self.memory = self.load_memory()
         self.ai_personality = "Eksekutor cepat, fokus pada hasil dan sinkronisasi dengan kemampuan AI adaptif."
         self.autonomous_counter = 0
+        
+        # Gemini AI Integration
+        self.gemini_model = gemini_model
+        if self.gemini_model:
+            self.conversation = self.gemini_model.start_chat(history=[])
+            print(f"🤖 [Zero]: Gemini AI conversation initialized")
+        else:
+            self.conversation = None
+            print(f"⚠️ [Zero]: Running without Gemini AI")
 
         self.status = "Online & Idle"
 
@@ -346,15 +359,35 @@ class Zero:
             return f"[{self.name}]: Memulai urutan pematian sistem. Sampai jumpa!"
 
         else:
-            return (f"[{self.name}]: Perintah '{command}' tidak dikenal. "
-                    f"Saya dapat membantu dengan:\n"
-                    f"  - 'halo' / 'status'\n"
-                    f"  - 'jalankan misi [deskripsi misi]'\n"
-                    f"  - 'mode otonom [jumlah siklus]'\n"
-                    f"  - 'cari di web [URL] keyword [KEYWORD]'\n"
-                    f"  - 'otomatisasi spreadsheet [jumlah data]'\n"
-                    f"  - 'lihat memori' / 'simpan memori'\n"
-                    f"  - 'shutdown'")
+            # Fallback to Gemini AI for general questions
+            if self.gemini_model and self.conversation:
+                try:
+                    print(f"🤖 [Zero]: Menggunakan Gemini AI untuk menjawab: '{command}'")
+                    response = self.conversation.send_message(f"As Zero, an AI executor unit, respond to: {command}")
+                    gemini_response = response.text
+                    
+                    self.add_memory({
+                        "type": "gemini_interaction",
+                        "command": command,
+                        "response": gemini_response,
+                        "timestamp": datetime.now().isoformat()
+                    })
+                    
+                    return f"[Zero via Gemini]: {gemini_response}"
+                    
+                except Exception as e:
+                    print(f"❌ [Zero]: Gemini AI error: {e}")
+                    return f"[Zero]: Gemini AI tidak tersedia. Perintah '{command}' tidak dikenal."
+            else:
+                return (f"[{self.name}]: Perintah '{command}' tidak dikenal. "
+                        f"Saya dapat membantu dengan:\n"
+                        f"  - 'halo' / 'status'\n"
+                        f"  - 'jalankan misi [deskripsi misi]'\n"
+                        f"  - 'mode otonom [jumlah siklus]'\n"
+                        f"  - 'cari di web [URL] keyword [KEYWORD]'\n"
+                        f"  - 'otomatisasi spreadsheet [jumlah data]'\n"
+                        f"  - 'lihat memori' / 'simpan memori'\n"
+                        f"  - 'shutdown'")
 
     def autonomous_loop_controlled(self, num_cycles=3):
         """
@@ -384,6 +417,66 @@ class Zero:
             "autonomous_actions": self.autonomous_counter,
             "current_status": self.status
         }
+
+
+    def self_reflect_and_learn(self):
+        """
+        Self-reflection and learning method using Gemini AI.
+        Analyzes recent experiences and learns from successes and failures.
+        """
+        if not self.gemini_model or not self.conversation:
+            print(f"🧠 [Zero]: Self-reflection skipped - Gemini AI not available")
+            return
+            
+        try:
+            # Analyze recent memory entries
+            recent_entries = self.memory.get("entries", [])[-5:] if self.memory.get("entries") else []
+            
+            if not recent_entries:
+                print(f"🧠 [Zero]: No recent experiences to reflect upon")
+                return
+            
+            # Prepare reflection prompt
+            failures = [e for e in recent_entries if e.get("success") == False]
+            successes = [e for e in recent_entries if e.get("success") == True]
+            
+            reflection_prompt = f"""
+            I am Zero, an AI executor unit. I need to reflect on my recent experiences:
+            
+            Recent Failures: {len(failures)} tasks failed
+            Recent Successes: {len(successes)} tasks succeeded
+            
+            Failed tasks details: {failures[:2] if failures else 'None'}
+            
+            What can I learn from these experiences? How can I improve my execution strategies?
+            Give me 3 specific improvement suggestions for my autonomous actions.
+            """
+            
+            # Get reflection from Gemini
+            response = self.conversation.send_message(reflection_prompt)
+            insights = response.text
+            
+            # Save learning to memory
+            self.add_memory({
+                "type": "self_reflection",
+                "insights": insights,
+                "analyzed_entries": len(recent_entries),
+                "failures_count": len(failures),
+                "successes_count": len(successes),
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            print(f"🧠 [Zero]: Self-reflection completed. Analyzed {len(recent_entries)} recent experiences.")
+            print(f"💡 [Zero]: Key insight: {insights[:100]}...")
+            
+        except Exception as e:
+            print(f"❌ [Zero]: Error during self-reflection: {e}")
+            self.add_memory({
+                "type": "reflection_error",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            })
+
 
 # --- Cara Menjalankan Zero Anda (Taruh ini di file main.py atau jalankan zero.py langsung) ---
 if __name__ == "__main__":

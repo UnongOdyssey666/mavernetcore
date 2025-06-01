@@ -6,22 +6,31 @@ import random
 from datetime import datetime
 from pathlib import Path
 
+# Gemini AI Configuration (Global)
+import google.generativeai as genai
+
+# Configure Gemini with API key from Replit Secrets
+try:
+    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+    global_gemini_model = genai.GenerativeModel('gemini-pro')
+    print("✅ Gemini AI configured successfully")
+except Exception as e:
+    print(f"⚠️ Warning: Gemini AI configuration failed: {e}")
+    global_gemini_model = None
+
 # Impor semua unit AI Anda
 from zero import Zero
-# Asumsi Anda juga memiliki file x.py, nova.py, dan oracle.py dengan kelas masing-masing
-# Jika belum, Anda mungkin perlu membuatnya atau mengomentari baris ini sementara
 from x import XReplica
 from nova import Nova
 from oracle import Oracle
 
 class MaverNetSystem:
     def __init__(self):
-        # Inisialisasi semua unit AI
-        self.zero = Zero()
-        # Asumsi XReplica, Nova, Oracle juga memiliki method __init__ yang valid
-        self.x = XReplica()
-        self.nova = Nova()
-        self.oracle = Oracle()
+        # Inisialisasi semua unit AI dengan Gemini model
+        self.zero = Zero(gemini_model=global_gemini_model)
+        self.x = XReplica(gemini_model=global_gemini_model)
+        self.nova = Nova(gemini_model=global_gemini_model)
+        self.oracle = Oracle(gemini_model=global_gemini_model)
 
         self.memory_log_path = "data/memory_log.json"
         self.mission_data_path = "data/mission_data.json"
@@ -95,11 +104,18 @@ class MaverNetSystem:
                 print(f"🧠 [{unit}]: {thought}")
 
         # Setiap karakter menjalankan aksi otonom mereka
-        # Asumsi method 'autonomous_action' ada di XReplica, Nova, dan Oracle
         self.zero.autonomous_action()
-        # self.x.autonomous_action() # Uncomment jika sudah ada di XReplica
-        # self.nova.autonomous_action() # Uncomment jika sudah ada di Nova
-        # self.oracle.autonomous_action() # Uncomment jika sudah ada di Oracle
+        self.x.autonomous_action()
+        self.nova.autonomous_action()
+        self.oracle.autonomous_action()
+        
+        # Trigger self-reflection periodically
+        if random.random() < 0.3:  # 30% chance for reflection
+            print("\n🧠 [TRIGGERING SELF-REFLECTION CYCLE]")
+            self.zero.self_reflect_and_learn()
+            self.x.self_reflect_and_learn()
+            self.nova.self_reflect_and_learn()
+            self.oracle.self_reflect_and_learn()
 
     def system_boot(self):
         """
@@ -148,10 +164,9 @@ class MaverNetSystem:
         """
         print("\n🧩 [UNIT STATUS REPORT]")
         print("- ZERO:", self.zero.get_status())
-        # Asumsi X, Nova, Oracle memiliki method get_status() yang valid
-        # print("- X-REPLICA:", self.x.get_status()) # Uncomment jika sudah ada
-        # print("- NOVA:", self.nova.get_status()) # Uncomment jika sudah ada
-        # print("- ORACLE:", self.oracle.get_status()) # Uncomment jika sudah ada
+        print("- X-REPLICA:", self.x.get_status())
+        print("- NOVA:", self.nova.get_status())
+        print("- ORACLE:", self.oracle.get_status())
 
         if self.ai_thoughts:
             print("\n🧠 [CURRENT AI THOUGHTS]")
@@ -170,9 +185,9 @@ class MaverNetSystem:
 
         all_memory_data = {
             "Zero": self.zero.memory,
-            # "X": self.x.memory, # Uncomment jika X memiliki attribute 'memory'
-            # "Nova": self.nova.memory, # Uncomment jika Nova memiliki attribute 'memory'
-            # "Oracle": self.oracle.memory, # Uncomment jika Oracle memiliki attribute 'memory'
+            "X": self.x.memory,
+            "Nova": self.nova.memory,
+            "Oracle": self.oracle.memory,
             "ai_thoughts": self.ai_thoughts,
             "last_updated": datetime.now().isoformat()
         }
