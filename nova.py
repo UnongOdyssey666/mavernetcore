@@ -198,7 +198,8 @@ class Nova:
             "visual_data_count": len(self.visual_data),
             "ai_personality": self.ai_personality,
             "autonomous_actions": self.autonomous_counter
-        }us_action()
+        }
+        jus_action()
 
     def add_memory(self, entry):
         if isinstance(self.memory, dict):
