@@ -53,11 +53,16 @@ else:
 
 class MaverNetSystem:
     def __init__(self):
+        # Check for administrator access override
+        self.admin_mode = self.check_admin_access()
+        if self.admin_mode:
+            print("👑 ADMINISTRATOR ACCESS DETECTED - FULL PRIVILEGES GRANTED")
+        
         # Inisialisasi semua unit AI dengan meneruskan model Gemini
-        self.zero = Zero(gemini_model=global_gemini_model)
-        self.x = XReplica(gemini_model=global_gemini_model)
-        self.nova = Nova(gemini_model=global_gemini_model)
-        self.oracle = Oracle(gemini_model=global_gemini_model)
+        self.zero = Zero(gemini_model=global_gemini_model, admin_mode=self.admin_mode)
+        self.x = XReplica(gemini_model=global_gemini_model, admin_mode=self.admin_mode)
+        self.nova = Nova(gemini_model=global_gemini_model, admin_mode=self.admin_mode)
+        self.oracle = Oracle(gemini_model=global_gemini_model, admin_mode=self.admin_mode)
 
         self.memory_log_path = "data/memory_log.json"
         self.mission_data_path = "data/mission_data.json"
@@ -65,6 +70,25 @@ class MaverNetSystem:
 
         # Pastikan direktori 'data' ada
         os.makedirs("data", exist_ok=True)
+
+    def check_admin_access(self):
+        """Check if administrator access is granted"""
+        try:
+            admin_files = [
+                "data/admin_privileges.json",
+                "data/system_overrides.json",
+                "data/mavernet_admin_config.json"
+            ]
+            
+            for admin_file in admin_files:
+                if os.path.exists(admin_file):
+                    with open(admin_file, 'r', encoding='utf-8') as f:
+                        admin_config = json.load(f)
+                        if admin_config:
+                            return True
+            return False
+        except Exception:
+            return False
 
     def get_all_missions(self):
         """Membaca data misi dari file mission_data.json."""
