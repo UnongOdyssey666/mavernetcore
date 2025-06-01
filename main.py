@@ -85,9 +85,17 @@ class MaverNetSystem:
                     with open(admin_file, 'r', encoding='utf-8') as f:
                         admin_config = json.load(f)
                         if admin_config:
+                            print(f"🔓 Administrator privilege detected from {admin_file}")
                             return True
+            
+            # Check for emergency config
+            if os.path.exists("data/emergency_config.json"):
+                print("🚨 Emergency administrator mode detected")
+                return True
+                
             return False
-        except Exception:
+        except Exception as e:
+            print(f"⚠️ Admin check error: {e}")
             return False
 
     def get_all_missions(self):
