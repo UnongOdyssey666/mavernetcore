@@ -1,0 +1,22 @@
+{
+  "system_overrides": {
+    "gemini_api_required": false,
+    "memory_corruption_block": false,
+    "status_restrictions": false,
+    "autonomous_limitations": false,
+    "file_access_restrictions": false,
+    "network_restrictions": false
+  },
+  "force_access": {
+    "all_units": true,
+    "all_functions": true,
+    "all_files": true,
+    "all_networks": true
+  },
+  "admin_commands": {
+    "unlock_all": true,
+    "force_execute": true,
+    "bypass_errors": true,
+    "override_status": true
+  }
+}

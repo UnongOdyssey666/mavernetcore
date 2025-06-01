@@ -1,0 +1,21 @@
+{
+  "system_administrator": {
+    "name": "SYSTEM_ADMIN",
+    "access_level": "UNLIMITED",
+    "can_override": true,
+    "can_modify": true,
+    "can_execute": true,
+    "can_shutdown": true,
+    "can_restart": true,
+    "granted_permissions": [
+      "FULL_SYSTEM_ACCESS",
+      "MEMORY_CONTROL",
+      "UNIT_OVERRIDE",
+      "STATUS_MODIFICATION",
+      "GEMINI_BYPASS",
+      "FILE_SYSTEM_ACCESS",
+      "NETWORK_ACCESS",
+      "AUTONOMOUS_CONTROL"
+    ]
+  }
+}

@@ -1,11 +1,11 @@
 {
-  "x_replica": {
+  "oracle": {
     "entries": [
       {
         "type": "admin_access_granted",
         "message": "Administrator access activated",
         "permissions": "UNLIMITED",
-        "timestamp": "2025-06-01T23:42:14.331324"
+        "timestamp": "2025-06-01T23:42:14.334569"
       }
     ],
     "admin_override": true
