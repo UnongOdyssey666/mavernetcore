@@ -1,5 +1,3 @@
-
-<old_str># nova.py - AI-Enhanced Visual Designer Unit
 import json
 import random
 from pathlib import Path
@@ -217,7 +215,7 @@ class Nova:
             "visual_data_keys": list(self.visual_data.keys()),
             "ai_personality": self.ai_personality,
             "autonomous_actions": self.autonomous_counter
-        }</old_str>
+        }
 <new_str># nova.py - AI-Enhanced Visual Designer Unit
 import json
 import random

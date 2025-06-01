@@ -1,5 +1,4 @@
 
-<old_str>
 
 # oracle.py - AI-Enhanced Intelligence & Strategic Unit
 import json
