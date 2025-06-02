@@ -106,8 +106,17 @@ class MaverNetSystem:
         elif "shutdown" in cmd or "exit" in cmd:
             return self.shutdown_system()
 
-        # Omega mode activation
-        elif "omega" in cmd and "zero" in cmd:
+        # Direct web browsing commands
+        elif any(site in cmd for site in ['google.com', 'youtube.com', 'github.com', 'facebook.com', 'twitter.com']):
+            return self.zero.web_request(cmd)
+        elif cmd.startswith("search "):
+            query = cmd.replace("search ", "")
+            return self.zero.web_search(query)
+        elif cmd == "web check":
+            return self.zero.check_internet_connection()
+
+        # Omega mode activation  
+        elif "omega" in cmd and ("activate" in cmd or "mode" in cmd):
             return self.activate_omega_mode()
 
         # Zero commands - All operations go through Zero
@@ -140,10 +149,10 @@ class MaverNetSystem:
         """Show available commands"""
         omega_help = """
 🔥 OMEGA v1 Commands (Admin Mode):
-  zero mode omega     - Activate Omega v1
-  zero read file.txt  - Read any file
+  omega activate      - Activate Omega v1 mode
+  zero read file.txt  - Read any file  
   zero write file.txt content - Write files
-  zero web scrape url - Real web scraping""" if self.admin_mode else ""
+  zero repair system  - Full system repair""" if self.admin_mode else ""
 
         return f"""🚀 MAVERNET COMMANDS
 
@@ -152,17 +161,27 @@ class MaverNetSystem:
   help      - This help menu
   shutdown  - Safe system exit
 
+🌐 WEB BROWSING (Direct Commands):
+  google.com          - Visit Google
+  youtube.com         - Visit YouTube  
+  github.com          - Visit GitHub
+  search [query]      - Search internet
+  web check           - Test connection
+
 🤖 Zero AI Agent:
   zero [cmd]   - Execute with Zero
-  [any text]   - Direct to Zero AI
+  zero help    - Zero's full help menu
+  zero status  - Zero's detailed status
+  zero repair  - Self-repair system
 
 ⚡ Quick Examples:
-  zero status           - Zero's status
-  zero read file.txt    - Read file
-  zero web search       - Web search
-  zero analyze text     - Text analysis{omega_help}
+  google.com            - Browse Google
+  search artificial intelligence
+  zero read config.json - Read file
+  zero web youtube.com  - Browse via Zero
+  zero autonomous 3     - Run 3 AI cycles{omega_help}
 
-💡 Just type naturally - Zero AI will understand!"""
+💡 Just type naturally - System understands context!"""
 
     def shutdown_system(self):
         """Safe system shutdown"""
