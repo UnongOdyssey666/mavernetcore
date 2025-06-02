@@ -15,7 +15,7 @@ run = ["python3", "main.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "MAVERNET Boot"
+runButton = "MAVERNET Zero"
 
 [[workflows.workflow]]
 name = "MAVERNET Boot"
@@ -52,3 +52,12 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python setup_transition.py"
+
+[[workflows.workflow]]
+name = "MAVERNET Zero"
+author = 43196889
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"

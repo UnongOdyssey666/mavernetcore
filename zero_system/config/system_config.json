@@ -1,0 +1,62 @@
+
+{
+  "zero_system": {
+    "version": "2.0-Enhanced",
+    "core_modules": {
+      "ai_agent": true,
+      "file_operations": true,
+      "web_interaction": true,
+      "autonomous_mode": true,
+      "self_repair": true
+    },
+    "data_paths": {
+      "memory": "zero_system/data/zero_memory.json",
+      "logs": "zero_system/logs/",
+      "config": "zero_system/config/"
+    },
+    "permissions": {
+      "admin_required_paths": [
+        "system/",
+        "etc/",
+        "root/",
+        "admin/"
+      ],
+      "safe_paths": [
+        "data/",
+        "logs/",
+        "temp/",
+        "output/",
+        "zero_system/"
+      ],
+      "allowed_extensions": [
+        ".txt",
+        ".json",
+        ".csv",
+        ".log",
+        ".md",
+        ".py"
+      ]
+    },
+    "features": {
+      "omega_mode": {
+        "enabled": true,
+        "requires_admin": true,
+        "capabilities": [
+          "real_file_operations",
+          "system_administration",
+          "advanced_web_interaction"
+        ]
+      },
+      "autonomous_operations": {
+        "enabled": true,
+        "max_cycles": 10,
+        "interval_seconds": 1
+      },
+      "self_repair": {
+        "enabled": true,
+        "auto_trigger": true,
+        "max_attempts": 3
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 MAVERNET CORE SYSTEM
-Clean UI with Omega v1 Integration
+Clean UI with Zero-Only Integration
 """
 
 import json
@@ -14,12 +14,12 @@ from datetime import datetime
 # Gemini AI import
 import google.generativeai as genai
 
-# Import MAVERNET units
+# Import MAVERNET Zero unit only
 from zero import Zero
 
 class MaverNetSystem:
     def __init__(self):
-        print("🚀 MAVERNET CORE - AI Multi-Agent System")
+        print("🚀 MAVERNET CORE - Zero AI System")
         print("=" * 45)
 
         # Setup Gemini AI
@@ -28,18 +28,15 @@ class MaverNetSystem:
         # Check admin access
         self.admin_mode = self.check_admin_access()
 
-        # Initialize AI units
-        print("🤖 Initializing AI Agents...")
+        # Initialize Zero AI unit only
+        print("🤖 Initializing Zero AI Agent...")
         self.zero = Zero(gemini_model=global_gemini_model, admin_mode=self.admin_mode)
-        self.x = X(gemini_model=global_gemini_model)
-        self.nova = Nova(gemini_model=global_gemini_model)
-        self.oracle = Oracle(gemini_model=global_gemini_model)
 
         # System status
         self.omega_mode = False
         self.mission_data = self.load_mission_data()
 
-        print("✅ All AI Agents Online")
+        print("✅ Zero AI Agent Online")
 
     def setup_gemini_ai(self):
         """Setup Gemini AI"""
@@ -81,7 +78,7 @@ class MaverNetSystem:
             return "❌ Omega v1 requires Administrator access"
 
         self.omega_mode = True
-        self.zero.admin_mode = True
+        self.zero.omega_mode = True
 
         print("🔥 OMEGA v1 MODE ACTIVATED")
         print("⚡ Real file operations enabled")
@@ -113,46 +110,16 @@ class MaverNetSystem:
         elif "omega" in cmd and "zero" in cmd:
             return self.activate_omega_mode()
 
-        # Zero commands
+        # Zero commands - All operations go through Zero
         elif cmd.startswith("zero"):
             zero_cmd = cmd.replace("zero", "").strip()
             if not zero_cmd:
                 return self.zero.get_status()
             return self.zero.interact(zero_cmd)
 
-        # X commands
-        elif cmd.startswith("x"):
-            x_cmd = cmd.replace("x", "").strip()
-            if not x_cmd:
-                return f"[X]: {self.x.get_status()}"
-            return self.x.interact(x_cmd)
-
-        # Nova commands
-        elif cmd.startswith("nova"):
-            nova_cmd = cmd.replace("nova", "").strip()
-            if not nova_cmd:
-                return f"[Nova]: {self.nova.get_status()}"
-            return self.nova.interact(nova_cmd)
-
-        # Oracle commands  
-        elif cmd.startswith("oracle"):
-            oracle_cmd = cmd.replace("oracle", "").strip()
-            if not oracle_cmd:
-                return f"[Oracle]: {self.oracle.get_status()}"
-            return self.oracle.interact(oracle_cmd)
-
-        # Auto-route intelligent commands
-        elif any(word in cmd for word in ["read", "write", "file", "web", "search"]):
-            return self.zero.interact(command)
-        elif any(word in cmd for word in ["excel", "spreadsheet", "data", "csv"]):
-            return self.x.interact(command)
-        elif any(word in cmd for word in ["chart", "graph", "visual", "dashboard"]):
-            return self.nova.interact(command)
-        elif any(word in cmd for word in ["analyze", "predict", "threat", "intelligence"]):
-            return self.oracle.interact(command)
-
+        # Direct routing to Zero for all other commands
         else:
-            return self.get_help()
+            return self.zero.interact(command)
 
     def get_system_status(self):
         """Get clean system status"""
@@ -161,10 +128,7 @@ class MaverNetSystem:
 
         return f"""🚀 MAVERNET SYSTEM STATUS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚡ Zero    : {self.zero.status} | Mode: {omega_status}
-🔗 X       : Online | Data Processing Ready
-🎨 Nova    : Online | Visualization Ready  
-🔮 Oracle  : Online | Analysis Ready
+⚡ Zero    : Online | Mode: {omega_status}
 
 🔐 Access  : {admin_status}
 📊 Missions: {len(self.mission_data)} loaded
@@ -188,19 +152,17 @@ class MaverNetSystem:
   help      - This help menu
   shutdown  - Safe system exit
 
-🤖 AI Agents:
+🤖 Zero AI Agent:
   zero [cmd]   - Execute with Zero
-  x [cmd]      - Data operations with X
-  nova [cmd]   - Visualization with Nova
-  oracle [cmd] - Analysis with Oracle
+  [any text]   - Direct to Zero AI
 
 ⚡ Quick Examples:
   zero status           - Zero's status
-  x read excel data.xlsx - Process Excel
-  nova create chart     - Generate chart
-  oracle analyze text   - Text analysis{omega_help}
+  zero read file.txt    - Read file
+  zero web search       - Web search
+  zero analyze text     - Text analysis{omega_help}
 
-💡 Just type naturally - AI will understand!"""
+💡 Just type naturally - Zero AI will understand!"""
 
     def shutdown_system(self):
         """Safe system shutdown"""
@@ -213,7 +175,7 @@ def main():
     """Main system entry point"""
     system = MaverNetSystem()
 
-    print(f"\n🎯 MAVERNET READY")
+    print(f"\n🎯 MAVERNET READY - Zero AI Agent Active")
     print("Type 'help' for commands or 'status' for system info")
 
     while True:
