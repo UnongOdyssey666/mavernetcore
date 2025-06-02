@@ -1,16 +1,12 @@
 {
   "mavernet_administrator": {
     "version": "ADMIN_v1.0",
-    "access_granted": "2025-06-01T23:42:14.334980",
+    "access_granted": "2025-06-02T00:08:59.363645",
     "administrator_id": "SUPREME_ADMIN",
     "security_clearance": "UNLIMITED",
     "system_control": "FULL",
     "emergency_override": true,
-    "commands": {
-      "force_start": "python admin_access.py --force-start",
-      "emergency_shutdown": "python admin_access.py --emergency-stop",
-      "reset_all": "python admin_access.py --reset-all",
-      "grant_access": "python admin_access.py --grant-access"
-    }
+    "ai_agent_enabled": true,
+    "gemini_integration": true
   }
 }
