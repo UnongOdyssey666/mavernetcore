@@ -22,10 +22,14 @@ class Zero:
         """
         self.name = "Zero"
         self.admin_mode = admin_mode
+        self.omega_mode = False
         self.skills = [
             "Eksekutor Misi", "Sinkronisasi Data", "AI Decision Making",
             "Autonomous Action", "Adaptive Learning", "Web Interaction", "File System Operations"
         ]
+        if admin_mode:
+            self.skills.extend(["Omega v1 Operations", "Real File Manipulation", "System Administration"])
+        
         self.memory = self.load_memory()
         self.ai_personality = "Eksekutor cepat, fokus pada hasil dan sinkronisasi dengan kemampuan AI adaptif."
         self.autonomous_counter = 0
@@ -556,6 +560,42 @@ class Zero:
             payload_data = {"action": "process data", "data_points": data_points}
             return self.execute_task("spreadsheet_automation_sim", payload_data)
 
+        # Omega v1 mode activation
+        elif "mode omega" in command_lower and self.admin_mode:
+            self.omega_mode = True
+            self.add_memory({
+                "type": "omega_activation",
+                "timestamp": datetime.now().isoformat()
+            })
+            return f"🔥 [{self.name}]: Omega v1 Mode ACTIVATED! Real operations enabled."
+
+        # Enhanced file operations for Omega mode
+        elif "create file" in command_lower and self.omega_mode:
+            parts = command.split(" ", 3)
+            if len(parts) >= 4:
+                file_path = parts[2]
+                content = parts[3]
+                return self.write_file(file_path, content)
+            else:
+                return f"[{self.name}]: Format: 'create file <path> <content>'"
+
+        elif "delete file" in command_lower and self.omega_mode:
+            file_path = command.split("delete file", 1)[-1].strip()
+            if file_path:
+                try:
+                    os.remove(file_path)
+                    self.add_memory({
+                        "type": "file_delete",
+                        "file_path": file_path,
+                        "success": True,
+                        "timestamp": datetime.now().isoformat()
+                    })
+                    return f"🔥 [{self.name}]: File deleted: {file_path}"
+                except Exception as e:
+                    return f"❌ [{self.name}]: Delete failed: {e}"
+            else:
+                return f"[{self.name}]: Specify file path to delete"
+
         # Command for viewing memory
         elif "lihat memori" in command_lower or "check memory" in command_lower:
             if self.memory and self.memory.get("entries"):
@@ -652,14 +692,16 @@ class Zero:
         """
         Mengembalikan kamus yang berisi status Zero saat ini.
         """
-        return {
-            "name": self.name,
-            "skills": self.skills,
-            "memory_entries": len(self.memory.get("entries", [])) if isinstance(self.memory, dict) else 0,
-            "ai_personality": self.ai_personality,
-            "autonomous_actions": self.autonomous_counter,
-            "current_status": self.status
-        }
+        mode_indicator = "🔥 Omega v1" if self.omega_mode else "⚡ Standard"
+        return f"""[Zero Status]:
+🤖 Name: {self.name}
+⚡ Mode: {mode_indicator}
+📊 Status: {self.status}
+🧠 Memory: {len(self.memory.get("entries", [])) if isinstance(self.memory, dict) else 0} entries
+🔄 Actions: {self.autonomous_counter} autonomous cycles
+👑 Admin: {'Yes' if self.admin_mode else 'No'}
+
+🎯 Ready for operations!"""
 
 
     def self_reflect_and_learn(self):
