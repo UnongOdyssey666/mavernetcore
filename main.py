@@ -1,396 +1,284 @@
-# main.py - MAVERNET Core Orchestrator
+#!/usr/bin/env python3
+"""
+MAVERNET MAIN SYSTEM - Zero Enhanced Integration
+Single entry point for all MAVERNET operations with Zero Enhanced capabilities
+"""
+
 import json
 import os
 import time
 import random
 import re
-from datetime import datetime
+import sys
+import subprocess
 from pathlib import Path
+from datetime import datetime
 
-# Impor library Gemini API
+# Gemini AI import
 import google.generativeai as genai
 
-# Impor semua unit AI Anda
-# Pastikan Anda memiliki file-file ini di folder yang sama: zero.py, x.py, nova.py, oracle.py
-from zero import Zero
-from x import XReplica
-from nova import Nova
-from oracle import Oracle
+# Import Zero Enhanced
+from zero_enhanced import ZeroEnhanced
 
-# --- Konfigurasi Global Gemini API ---
-# Pastikan GEMINI_API_KEY sudah disimpan di Replit Secrets Anda
-api_key = os.environ.get("GEMINI_API_KEY")
-global_gemini_model = None
+# Import admin access for administrator functions
+from admin_access import MaverNetAdministrator
 
-if not api_key:
-    print("❌ ERROR: GEMINI_API_KEY not found in Replit Secrets. Gemini AI features will be limited.")
-else:
-    try:
-        # Konfigurasi genai di level global, hanya sekali
-        genai.configure(api_key=api_key)
-        
-        # Try different model names in order of preference
-        model_names = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
-        
-        for model_name in model_names:
-            try:
-                global_gemini_model = genai.GenerativeModel(model_name)
-                # Test the model with a simple request
-                test_response = global_gemini_model.generate_content("Hello")
-                print(f"✅ Gemini AI configured successfully with model: {model_name}")
-                break
-            except Exception as model_error:
-                print(f"⚠️ Model {model_name} not available: {str(model_error)}")
-                continue
-        
-        if global_gemini_model is None:
-            print("❌ ERROR: No Gemini models are available. Running without AI features.")
-            
-    except Exception as e:
-        print(f"❌ ERROR configuring Gemini AI: {str(e)}. Running without AI features.")
-        global_gemini_model = None
-
-
-class MaverNetSystem:
+class MaverNetMainSystem:
     def __init__(self):
-        # Check for administrator access override
+        print("🚀 MAVERNET MAIN SYSTEM - ZERO ENHANCED")
+        print("=" * 50)
+
+        # Check administrator access
         self.admin_mode = self.check_admin_access()
+
+        # Setup Gemini AI
+        self.setup_gemini_ai()
+
+        # Initialize Zero Enhanced as the main AI agent
+        self.zero_enhanced = ZeroEnhanced(gemini_model=self.gemini_model)
+
+        # Initialize administrator if needed
+        self.administrator = None
         if self.admin_mode:
-            print("👑 ADMINISTRATOR ACCESS DETECTED - FULL PRIVILEGES GRANTED")
-        
-        # Inisialisasi semua unit AI dengan meneruskan model Gemini
-        self.zero = Zero(gemini_model=global_gemini_model, admin_mode=self.admin_mode)
-        self.x = XReplica(gemini_model=global_gemini_model, admin_mode=self.admin_mode)
-        self.nova = Nova(gemini_model=global_gemini_model, admin_mode=self.admin_mode)
-        self.oracle = Oracle(gemini_model=global_gemini_model, admin_mode=self.admin_mode)
+            self.administrator = MaverNetAdministrator()
 
-        self.memory_log_path = "data/memory_log.json"
-        self.mission_data_path = "data/mission_data.json"
-        self.ai_thoughts = {}
+        # System configuration
+        self.system_config = self.load_system_config()
 
-        # Pastikan direktori 'data' ada
-        os.makedirs("data", exist_ok=True)
+        print("✅ MAVERNET MAIN SYSTEM READY")
 
     def check_admin_access(self):
-        """Check if administrator access is granted"""
-        try:
-            admin_files = [
-                "data/admin_privileges.json",
-                "data/system_overrides.json",
-                "data/mavernet_admin_config.json"
-            ]
-            
-            for admin_file in admin_files:
-                if os.path.exists(admin_file):
-                    with open(admin_file, 'r', encoding='utf-8') as f:
-                        admin_config = json.load(f)
-                        if admin_config:
-                            print(f"🔓 Administrator privilege detected from {admin_file}")
-                            return True
-            
-            # Check for emergency config
-            if os.path.exists("data/emergency_config.json"):
-                print("🚨 Emergency administrator mode detected")
+        """Check for administrator access"""
+        admin_files = [
+            "data/admin_privileges.json",
+            "data/system_overrides.json", 
+            "data/mavernet_admin_config.json",
+            "data/emergency_config.json",
+            "data/zero_enhanced_config.json"
+        ]
+
+        for admin_file in admin_files:
+            if os.path.exists(admin_file):
+                print(f"👑 Administrator access detected from {admin_file}")
                 return True
-                
-            return False
-        except Exception as e:
-            print(f"⚠️ Admin check error: {e}")
-            return False
 
-    def get_all_missions(self):
-        """Membaca data misi dari file mission_data.json."""
-        try:
-            with open(self.mission_data_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            print(f"❌ Mission data file not found: {self.mission_data_path}")
-            return []
-        except json.JSONDecodeError:
-            print(f"❌ Error decoding mission data from {self.mission_data_path}. Returning empty list.")
-            return []
+        return False
 
-    def ai_autonomous_thinking(self):
-        """
-        AI Agent: Pemikiran otonom independen untuk setiap karakter.
-        Setiap unit AI menghasilkan pemikiran otonomnya sendiri dan menjalankan aksi.
-        """
-        print("\n🧠 [AI AUTONOMOUS THINKING INITIATED]")
+    def setup_gemini_ai(self):
+        """Setup Gemini AI"""
+        api_key = os.environ.get("GEMINI_API_KEY")
+        self.gemini_model = None
 
-        # Pemikiran otonom Zero
-        zero_thoughts = [
-            "Analyzing system efficiency patterns...",
-            "Detecting potential sync optimization opportunities...",
-            "Evaluating mission execution protocols...",
-            "Planning automated response strategies..."
-        ]
+        if api_key:
+            try:
+                genai.configure(api_key=api_key)
+                model_names = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
 
-        # Pemikiran otonom X
-        x_thoughts = [
-            "Monitoring data flow integrity...",
-            "Designing new webhook integration patterns...",
-            "Optimizing log architecture structure...",
-            "Building predictive documentation systems..."
-        ]
+                for model_name in model_names:
+                    try:
+                        self.gemini_model = genai.GenerativeModel(model_name)
+                        test_response = self.gemini_model.generate_content("Hello")
+                        print(f"✅ Gemini AI configured with model: {model_name}")
+                        break
+                    except Exception:
+                        continue
 
-        # Pemikiran otonom Nova
-        nova_thoughts = [
-            "Conceptualizing next-gen UI innovations...",
-            "Analyzing user interaction patterns...",
-            "Designing adaptive visual experiences...",
-            "Creating intuitive dashboard layouts..."
-        ]
+                if self.gemini_model is None:
+                    print("❌ No Gemini models available")
 
-        # Pemikiran otonom Oracle
-        oracle_thoughts = [
-            "Forecasting system evolution trajectories...",
-            "Mapping strategic intelligence networks...",
-            "Analyzing future threat scenarios...",
-            "Developing strategic contingency plans..."
-        ]
+            except Exception as e:
+                print(f"❌ Gemini AI setup error: {e}")
+        else:
+            print("⚠️ GEMINI_API_KEY not found")
 
-        # Menjalankan pemikiran otonom dan aksi
-        self.ai_thoughts = {
-            "Zero": random.choice(zero_thoughts),
-            "X": random.choice(x_thoughts),
-            "Nova": random.choice(nova_thoughts),
-            "Oracle": random.choice(oracle_thoughts),
-            "timestamp": datetime.now().isoformat()
+    def load_system_config(self):
+        """Load system configuration"""
+        config_path = "data/zero_enhanced_config.json"
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"⚠️ Config load error: {e}")
+
+        # Default config
+        return {
+            "zero_enhanced": {
+                "version": "Supreme v3.0",
+                "admin_mode": self.admin_mode,
+                "autonomous_mode": True
+            }
         }
-
-        for unit, thought in self.ai_thoughts.items():
-            if unit != "timestamp":
-                print(f"🧠 [{unit}]: {thought}")
-
-        # Setiap karakter menjalankan aksi otonom mereka
-        # Pastikan method 'autonomous_action' ada di setiap unit
-        self.zero.autonomous_action()
-        self.x.autonomous_action()
-        self.nova.autonomous_action()
-        self.oracle.autonomous_action()
 
     def system_boot(self):
-        """
-        Fungsi ini menginisialisasi sistem utama dan semua unit AI.
-        """
-        print("🔧 [MAVERNET SYSTEM BOOTING...]")
-        print("🚀 Initializing AI-Enhanced Characters...")
+        """Boot the main system"""
+        print("\n🔧 [MAVERNET SYSTEM BOOTING...]")
+        print("🚀 Initializing Zero Enhanced Supreme AI...")
 
-        self.load_all_data() # Memuat semua data (memori dan misi)
+        # Load mission data
+        self.load_mission_data()
 
-        # Menginisialisasi Zero dengan loop otonom singkat saat boot
-        # Ini akan membuat Zero langsung melakukan beberapa aksi mandiri
-        self.zero.autonomous_loop_controlled(num_cycles=1) 
-        # Unit lain juga bisa punya loop otonom saat boot jika diperlukan
-        # self.x.autonomous_loop_controlled(num_cycles=1) 
+        # Run initial Zero Enhanced cycles
+        self.zero_enhanced.autonomous_action()
+        self.zero_enhanced.autonomous_self_repair()
 
-        # Memulai pemikiran otonom global setelah semua unit online
-        self.ai_autonomous_thinking() 
-        print("✅ [ALL UNITS ONLINE WITH AI ENHANCEMENT]")
+        # Create initial dashboard
+        self.zero_enhanced.create_system_dashboard()
 
-    def load_all_data(self):
-        """
-        Memuat semua data sistem, termasuk memori unit AI dan data misi.
-        """
-        print("📥 [LOADING DATA MODULES]")
+        print("✅ [ZERO ENHANCED ONLINE WITH SUPREME CAPABILITIES]")
+
+    def load_mission_data(self):
+        """Load mission data"""
+        mission_path = "data/mission_data.json"
         try:
-            # Memuat data memori untuk semua unit (Zero, X, Nova, Oracle)
-            # Setiap unit memuat memorinya sendiri via Zero.load_memory()
-            print("📌 Memory data loaded for all units (via individual unit loads).") 
-
-            # Memuat data misi
-            self.mission_data = self.get_all_missions()
-            print(f"📌 Loaded {len(self.mission_data)} mission entries")
+            if os.path.exists(mission_path):
+                with open(mission_path, 'r', encoding='utf-8') as f:
+                    self.mission_data = json.load(f)
+                print(f"📌 Loaded {len(self.mission_data)} mission entries")
+            else:
+                self.mission_data = []
+                print("📌 No mission data found")
         except Exception as e:
-            print("❌ ERROR loading data:", str(e))
+            print(f"❌ Mission data load error: {e}")
+            self.mission_data = []
 
-    def system_status(self):
-        """
-        Mencetak laporan status keseluruhan sistem dan setiap unit AI.
-        """
-        print("\n🧩 [UNIT STATUS REPORT]")
-        print("- ZERO:", self.zero.get_status())
-        # Asumsi X, Nova, Oracle memiliki method get_status() yang valid
-        print("- X-REPLICA:", self.x.get_status()) 
-        print("- NOVA:", self.nova.get_status())
-        print("- ORACLE:", self.oracle.get_status()) 
-
-        if self.ai_thoughts:
-            print("\n🧠 [CURRENT AI THOUGHTS]")
-            for unit, thought in self.ai_thoughts.items():
-                if unit != "timestamp":
-                    print(f"  💭 {unit}: {thought}")
-
-    def save_all_memory(self):
-        """
-        Menyimpan memori dari semua unit AI ke file memory_log.json.
-        Ini memastikan data yang dipelajari tetap persisten.
-        """
-        print("\n💾 Saving all unit memories...")
-        # Pastikan direktori 'data' ada
-        os.makedirs(os.path.dirname(self.memory_log_path), exist_ok=True)
-
-        # Setiap unit akan memanggil save_memory() mereka sendiri.
-        # Ini lebih modular daripada mencoba mengumpulkannya di sini.
-        self.zero.save_memory()
-        self.x.save_memory()
-        self.nova.save_memory()
-        self.oracle.save_memory()
-
-        # Simpan juga AI thoughts global jika diperlukan
-        global_mavernet_memory = {
-            "ai_thoughts_global": self.ai_thoughts,
-            "last_updated_global": datetime.now().isoformat()
-        }
-        # Anda bisa menyimpan ini ke file terpisah jika tidak ingin menimpa memory_log.json utama
-        # Misalnya, save ke 'data/mavernet_global_memory.json'
-        # with open("data/mavernet_global_memory.json", "w", encoding='utf-8') as f:
-        #     json.dump(global_mavernet_memory, f, indent=2)
-
-        print(f"✅ All unit memories saved to their respective files in 'data/'.")
-
-
-    def auto_github_sync(self):
-        """
-        Simulasi sinkronisasi otomatis ke GitHub repository.
-        Fungsi ini hanya mencetak pesan, sinkronisasi Git dilakukan secara eksternal (manual atau CI/CD).
-        """
-        print("\n📡 [AUTO GITHUB SYNC INITIATED]")
-        print("🔄 Preparing MAVERNET_CORE for GitHub synchronization...")
-        print("📋 Repository: mavernet_core")
-        print("🌐 Remote sync will be handled by Git integration")
-
-
-    def process_system_command(self, command):
-        """
-        Memproses perintah yang ditujukan untuk keseluruhan sistem MaverNet.
-        """
+    def process_command(self, command):
+        """Process user commands through the integrated system"""
         command_lower = command.lower().strip()
 
+        # System commands
         if "system status" in command_lower:
-            self.system_status()
-            return "[MaverNet]: Laporan status sistem ditampilkan di atas."
-        elif "save all memory" in command_lower:
-            self.save_all_memory()
-            return "[MaverNet]: Memori seluruh sistem berhasil disimpan."
-        elif "auto github sync" in command_lower:
-            self.auto_github_sync()
-            return "[MaverNet]: Permintaan sinkronisasi GitHub diproses."
-        elif "mavernet shutdown" in command_lower:
-            # Panggil shutdown Zero, yang akan mengubah status dan mengakhiri loop utama
-            response = self.zero.interact("shutdown")
-            # Pastikan unit lain juga mematikan diri dan menyimpan memori
-            self.x.save_memory()
-            self.nova.save_memory()
-            self.oracle.save_memory()
-            return f"[MaverNet]: Memulai pematian sistem...\n{response}"
-        else:
-            return None # Perintah sistem tidak dikenali
+            return self.get_system_status()
 
-    def route_command_to_unit(self, unit_name, unit_command):
-        """
-        Mengarahkan perintah ke unit AI spesifik.
-        """
-        unit = None
-        if unit_name.lower() == "zero":
-            unit = self.zero
-        elif unit_name.lower() == "x":
-            unit = self.x
-        elif unit_name.lower() == "nova":
-            unit = self.nova
-        elif unit_name.lower() == "oracle":
-            unit = self.oracle
+        elif "system shutdown" in command_lower or "mavernet shutdown" in command_lower:
+            self.zero_enhanced.save_memory()
+            self.zero_enhanced.status = "Offline"
+            return "[MAVERNET]: System shutdown initiated. Goodbye!"
 
-        if unit:
-            print(f"[MaverNet]: Mengarahkan perintah '{unit_command}' ke {unit_name}.")
-            # Asumsi setiap unit memiliki metode 'interact'
-            if hasattr(unit, 'interact'):
-                return unit.interact(unit_command)
+        elif "admin" in command_lower and self.administrator:
+            # Route to administrator
+            admin_command = command.replace("admin", "").strip()
+            if admin_command:
+                return f"[Admin]: {self.administrator.execute_command(admin_command)}"
             else:
-                return f"[MaverNet]: Unit {unit_name} tidak memiliki metode 'interact' yang dapat dipanggil."
+                return "[Admin]: Administrator console active. Available commands: unlock, status, repair, emergency"
+
+        elif "setup enhanced libraries" in command_lower:
+            results = self.zero_enhanced.setup_enhanced_libraries()
+            successful = sum(results.values())
+            return f"[MAVERNET]: Enhanced libraries setup: {successful}/{len(results)} installed"
+
+        elif "autonomous mode" in command_lower:
+            # Extract duration if specified
+            duration = 60  # Default 60 minutes
+            duration_match = re.search(r'(\d+)\s*(minutes?|mins?|hours?)', command_lower)
+            if duration_match:
+                value = int(duration_match.group(1))
+                unit = duration_match.group(2)
+                if 'hour' in unit:
+                    duration = value * 60
+                else:
+                    duration = value
+
+            self.zero_enhanced.start_autonomous_operation(duration)
+            return f"[MAVERNET]: Autonomous operation started for {duration} minutes"
+
+        elif "run transition" in command_lower or "setup transition" in command_lower:
+            return self.run_transition_setup()
+
+        # Route everything else to Zero Enhanced
         else:
-            return f"[MaverNet]: Unit '{unit_name}' tidak dikenal."
+            return self.zero_enhanced.interact(command)
 
-    def process_overall_command(self, command):
-        """
-        Pemroses perintah utama untuk seluruh sistem MaverNet dengan AI Agent-like parsing.
-        Mencoba perintah sistem, lalu perintah unit dengan parsing fleksibel, atau fallback ke Zero.
-        """
-        # 1. Coba perintah sistem terlebih dahulu
-        system_response = self.process_system_command(command)
-        if system_response:
-            return system_response
+    def get_system_status(self):
+        """Get comprehensive system status"""
+        status = self.zero_enhanced.get_status()
 
-        # 2. Flexible unit targeting dengan berbagai pola
-        # Pola 1: "Zero, [command]" atau "X, [command]"
-        comma_match = re.match(r'^(zero|x|nova|oracle|x\s*replica)\s*,\s*(.+)', command, re.IGNORECASE)
-        if comma_match:
-            unit_name = comma_match.group(1).strip()
-            unit_command = comma_match.group(2).strip()
-            return self.route_command_to_unit(unit_name, unit_command)
+        return f"""[MAVERNET SYSTEM STATUS]:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 Zero Enhanced: {status['current_status']}
+👑 Admin Mode: {'ENABLED' if self.admin_mode else 'DISABLED'}
+🧠 AI Model: {'Gemini Connected' if self.gemini_model else 'Offline'}
 
-        # Pola 2: "Tell Zero to [command]" atau "Ask Nova to [command]"
-        tell_match = re.match(r'^(tell|ask|command)\s+(zero|x|nova|oracle|x\s*replica)\s+to\s+(.+)', command, re.IGNORECASE)
-        if tell_match:
-            unit_name = tell_match.group(2).strip()
-            unit_command = tell_match.group(3).strip()
-            return self.route_command_to_unit(unit_name, unit_command)
+📊 PERFORMANCE METRICS:
+  🔄 Autonomous Actions: {status['autonomous_actions']}
+  🔧 Self Repairs: {status['self_repairs']} 
+  💾 Memory Entries: {status['memory_entries']}
+  ✅ Success Rate: {status['success_rate']:.1f}%
 
-        # Pola 3: "[Unit] [command]" tanpa koma
-        unit_direct_match = re.match(r'^(zero|x|nova|oracle|x\s*replica)\s+(.+)', command, re.IGNORECASE)
-        if unit_direct_match:
-            unit_name = unit_direct_match.group(1).strip()
-            unit_command = unit_direct_match.group(2).strip()
-            return self.route_command_to_unit(unit_name, unit_command)
+⚡ CAPABILITIES:
+  • Data Processing & Excel Automation
+  • Advanced Visualization & Dashboards  
+  • Text Analysis & Threat Assessment
+  • Web Browsing & Content Analysis
+  • Autonomous Self-Repair & Development
+  • Library Installation & System Admin
 
-        # Pola 4: Deteksi kata kunci untuk auto-routing ke unit yang tepat
-        command_lower = command.lower()
-        
-        # Auto-route berdasarkan kata kunci
-        if any(keyword in command_lower for keyword in ['excel', 'csv', 'spreadsheet', 'data automation', 'webhook']):
-            print(f"[MaverNet]: Auto-routing to X (Data specialist) based on keywords.")
-            return self.x.interact(command)
-        elif any(keyword in command_lower for keyword in ['chart', 'graph', 'visual', 'html', 'ui', 'dashboard']):
-            print(f"[MaverNet]: Auto-routing to Nova (Visual specialist) based on keywords.")
-            return self.nova.interact(command)
-        elif any(keyword in command_lower for keyword in ['analyze', 'statistics', 'predict', 'intelligence', 'threat', 'strategic']):
-            print(f"[MaverNet]: Auto-routing to Oracle (Analysis specialist) based on keywords.")
-            return self.oracle.interact(command)
+🎯 READY FOR: Any command, analysis, or autonomous operation
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""
 
-        # 3. Fallback ke Zero sebagai default
-        print(f"[MaverNet]: No specific unit detected, routing to Zero (Default executor).")
-        return self.zero.interact(command)
+    def run_transition_setup(self):
+        """Run transition setup script"""
+        try:
+            print("🔄 Running transition setup...")
+            result = subprocess.run([sys.executable, "setup_transition.py"], 
+                                 capture_output=True, text=True, timeout=60)
 
+            if result.returncode == 0:
+                return "[MAVERNET]: Transition setup completed successfully"
+            else:
+                return f"[MAVERNET]: Transition setup failed: {result.stderr}"
 
-# --- Jalankan MAVERNET Core Orchestrator ---
+        except Exception as e:
+            return f"[MAVERNET]: Transition setup error: {e}"
+
+    def save_all_data(self):
+        """Save all system data"""
+        self.zero_enhanced.save_memory()
+        print("💾 [MAVERNET]: All data saved")
+
+def main():
+    """Main entry point"""
+    # Initialize main system
+    system = MaverNetMainSystem()
+    system.system_boot()
+
+    print("\n--- MAVERNET MAIN SYSTEM: Zero Enhanced Active ---")
+    print("Available commands:")
+    print("  • 'system status' - Complete system overview")
+    print("  • 'admin [command]' - Administrator functions")
+    print("  • 'setup enhanced libraries' - Install AI libraries")
+    print("  • 'autonomous mode [duration]' - Start autonomous operation")
+    print("  • 'run transition' - Setup transition from old system")
+    print("  • Any Zero Enhanced command (data, analysis, visualization, etc.)")
+    print("  • 'system shutdown' - Shutdown system")
+
+    while system.zero_enhanced.status != "Offline":
+        try:
+            user_input = input("\nCommander> ").strip()
+
+            if not user_input:
+                continue
+
+            response = system.process_command(user_input)
+            print(response)
+
+            if system.zero_enhanced.status == "Offline":
+                break
+
+        except KeyboardInterrupt:
+            print(f"\n🛑 System shutdown initiated...")
+            system.save_all_data()
+            break
+        except Exception as e:
+            print(f"❌ System error: {e}")
+            # Auto-repair on error
+            try:
+                system.zero_enhanced.autonomous_self_repair()
+            except:
+                pass
+
+    print("\n👋 MAVERNET SYSTEM SHUTDOWN COMPLETE")
+
 if __name__ == "__main__":
-    system = MaverNetSystem()
-    system.system_boot() # Menjalankan proses booting dan inisialisasi
-
-    print("\n--- MAVERNET Core Orchestrator: Sistem Aktif ---")
-    print("Ketik perintah. Contoh:")
-    print("  - 'System status' (untuk laporan sistem)")
-    print("  - 'Zero, jalankan misi [deskripsi]' (untuk Zero)")
-    print("  - 'X, baca excel data/sample.xlsx' (untuk X)")
-    print("  - 'Nova, buat grafik bar data 10' (untuk Nova)")
-    print("  - 'Oracle, analisis teks ini adalah contoh' (untuk Oracle)")
-    print("  - 'MaverNet shutdown' (untuk mematikan seluruh sistem)")
-
-
-    while system.zero.get_status()['current_status'] != "Offline":
-        user_input = input("Komandan: ") # Ganti prompt menjadi 'Komandan' atau sesuai keinginan
-
-        # Proses perintah melalui MaverNetSystem
-        response = system.process_overall_command(user_input)
-        print(response)
-
-        # Cek status Zero lagi setelah perintah diproses (jika ada shutdown)
-        if system.zero.get_status()['current_status'] == "Offline":
-            break 
-
-    # Perintah simpan dan sync akan dipanggil saat system_boot (awal)
-    # dan juga saat MaverNet shutdown (di process_system_command)
-    # jadi tidak perlu dipanggil lagi di sini setelah loop
-
-    print("\n[Sistem MAVERNET]: Sistem telah dimatikan sepenuhnya. Sampai jumpa!")
-
+    main()

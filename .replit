@@ -43,3 +43,12 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python setup_github.py"
+
+[[workflows.workflow]]
+name = "Setup Transition"
+author = 43196889
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python setup_transition.py"
